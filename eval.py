@@ -15,10 +15,11 @@ import sys
 
 # Specify which source domain & classifier will be used for evaluating the target domain
 source = 'spcinsitu'
-classifier = 'insitu_from_scratch'
-exp_num = 'exp1'
+classifier = 'insitu_finetune'
+exp_num = 'exp2'
 model = 'model_' + exp_num + '.caffemodel'
 domain_path = os.path.join ('/data4/plankton_wi17/mpl/source_domain/', source, classifier)
+temp_outroot = '/data4/plankton_wi17/mpl/source_domain/spcinsitu/insitu_finetune/code'
 outroot = os.path.join('/data4/plankton_wi17/mpl/source_domain',source,classifier,exp_num)
 # domain_path = lab_google_root
 
@@ -139,7 +140,7 @@ def plot_roc_curve(gt,prob,classifier,num_class):
     plt.ylabel('True Positive Rate')
     plt.title('Receiver Operating Characteristic')
     plt.legend(loc="lower right")
-    plt.savefig(outroot + '/' + classifier+'_curve.png')
+    plt.savefig(outroot + '/' + classifier + '-' + exp_num +'_curve.png')
     print (classifier+'_curve.png saved.')
 
 def compute_cmatrix(gtruth,pred,num_class):
@@ -171,7 +172,7 @@ def main(test_data, num_class, domain, classifier, model):
     t1 = timeit.default_timer() # Start timer
 
     # Load LMDB
-    images, labels = load_lmdb(outroot + '/' + test_data)
+    images, labels = load_lmdb(temp_outroot + '/' + test_data)
 
     # Set to GPU mode
     caffe.set_mode_gpu()
@@ -252,7 +253,7 @@ def main(test_data, num_class, domain, classifier, model):
         confusion_matrix_rate[i,:] = (confusion_matrix_count[i,:])/class_count[i,0]
     confusion_matrix_rate = np.around(confusion_matrix_rate, decimals=4)
 
-    results_filename = os.path.join (outroot, classifier + '_Results.csv')
+    results_filename = os.path.join (outroot, classifier + '-' + exp_num + '_Results.csv')
     outfile = open (results_filename, 'wb')
     writer = csv.writer (outfile, delimiter=",")
     writer.writerow (['Binary Classifier: ' + domain.split ('/')[6]])
@@ -276,7 +277,7 @@ def write_pred2csv(predictions, probs):
     '''
 
     # Load dataframe
-    file_name = outroot + '/test.txt'
+    file_name = temp_outroot + '/test.txt'
     df = pd.read_csv(file_name,sep=' ' ,header=None)
     df.columns = ['path','gtruth']
 
@@ -290,7 +291,7 @@ def write_pred2csv(predictions, probs):
     df['confidence_level'] = confidence_level
 
     # Save changes to csv output
-    df.to_csv(outroot + '/' + exp_num + '_target_image_path_labels.csv')
+    df.to_csv(outroot + '/' + classifier + '-' + exp_num + '_target_image_path_labels.csv')
 
 if __name__=='__main__':
     main ('test1.LMDB', 2, domain_path, classifier, model)
