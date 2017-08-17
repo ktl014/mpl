@@ -67,17 +67,18 @@ def check_caffe_lmdb(lmdb_fn):
 def read_fns_from_csv():
 
     # Open csv file and convert files and labels to list
-    df = pd.read_csv('fourhr_target_image_path_labels.csv')
+    df = pd.read_csv('ogspc-fourhr_target_image_path_labels.csv')
 
     # Shuffle dataframe
     df_shuffled = df.iloc[np.random.permutation(len(df))]
     df_shuffled = df_shuffled.reset_index(drop=True)
 
-    df_shuffled.to_csv(TARGET_ROOT + '/master-target_image_path_labels.csv')
+    df_shuffled.to_csv(TARGET_ROOT + '/master1-fourhr_target_image_path_labels.csv')
 
     # Preprocess csv file for files and labels
     fns_all = df['img'].tolist()
     lbs_all = df['img_label'].tolist()
+    imgid_all = df['img_id'].tolist()
     lbl_count = df.img_label.value_counts()
     #print(lbl_count)
 
@@ -90,6 +91,7 @@ def read_fns_from_csv():
             lbs_all[index] = 0
         else:
             lbs_all[index] = 1
+    lbs_all = np.asarray(lbs_all)
 
     # Add source path to each image
     src_path = '/data4/plankton_wi17/mpl/target_domain/image_sym'
@@ -99,25 +101,7 @@ def read_fns_from_csv():
     if not os.path.exists(fns_all[0]):
         print("Does not exist")
 
-    # Return output to get_fns()
-    return fns_all, lbs_all, lookup_specimen_name
-
-def get_fns():
-    """
-    key - string denoting train, val, or test
-    target - integer denoting the class number of the group (class, order, species, etc) to detect
-    """
-
-    # Read image paths and labels from csv
-    fns,lbs,lookup_specimen_name = read_fns_from_csv()
-
-    # shuffle
-    index = range(len(fns))
-    random.shuffle(index)
-    fns = [fns[i] for i in index]
-    lbs = np.array([lbs[i] for i in index])
-
-    return fns, lbs
+    return fns_all, lbs_all
 
 def match_img_id():
     img_dict = {}
@@ -141,9 +125,24 @@ def main():
 
     #match_img_id()
     # Get file names and labels
-    test1_fns, test1_lbs = get_fns()
+    test1_fns, test1_lbs = read_fns_from_csv()
+    with open("test.txt",'w') as f:
+        for i in range(len(test1_fns)):
+            f.write(str(test1_fns[i] + " " + str(test1_lbs[i]) + '\n'))
+    f.close()
 
-    write_caffe_lmdb(test1_fns, test1_lbs, os.path.join(TARGET_ROOT,'target_fourhrs.LMDB'))
+    '''
+    Modified code to add more training data to spcinsitu image classifier
+    '''
+    # with open("target_add2training.txt","w") as f:
+    #     nSmpl = test1_lbs.size
+    #     for i in range(nSmpl):
+    #         f.write(str(test1_fns[i]) + ' ' + str(test1_lbs[i]) + '\n')
+    # f.close()
+    # if os.path.exists("target_add2training.txt"):
+    #     print("yes")
+
+    #write_caffe_lmdb(test1_fns, test1_lbs, os.path.join(TARGET_ROOT,'target_fourhrs.LMDB'))
 
     #lmdb = 'test1.LMDB'
     #ath = '/data4/plankton_wi17/plankton/plankton_binary_classifiers/plankton_phytoplankton/code'
@@ -151,8 +150,8 @@ def main():
    # check_caffe_lmdb(lmdb_to_read)
 
 if __name__ == '__main__':
-    #main()
-    fns,lbs,lookup_specimen_name = read_fns_from_csv()
+    main()
+    #fns,lbs,lookup_specimen_name = read_fns_from_csv()
     '''
     1. GENERAL_PATH
     2. which files to make lmdb for
