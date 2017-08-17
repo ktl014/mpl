@@ -16,7 +16,7 @@ import sys
 # Specify which source domain & classifier will be used for evaluating the target domain
 source = 'spcinsitu'
 classifier = 'insitu_finetune'
-exp_num = 'exp2'
+exp_num = 'exp4'
 model = 'model_' + exp_num + '.caffemodel'
 domain_path = os.path.join ('/data4/plankton_wi17/mpl/source_domain/', source, classifier)
 temp_outroot = '/data4/plankton_wi17/mpl/source_domain/spcinsitu/insitu_finetune/code'
@@ -72,7 +72,7 @@ def eval_results():
     accuracy = (pred == gt).mean()*100
     print(accuracy)
 
-    #tp, tn, fn, fp = compute_cmatrix(gtruth,pred,2)
+    # tp, tn, fn, fp = compute_cmatrix(gtruth,pred,2)
 
     tn, fp, fn, tp = confusion_matrix(gt,pred).ravel() #,labels=['copepod','non-copepod'])
 
@@ -179,7 +179,7 @@ def main(test_data, num_class, domain, classifier, model):
     #caffe.set_device(gpu_id)
 
     # Create path to deploy protoxt and weights
-    deploy_proto = os.path.join(domain, 'code/caffenet/deploy.prototxt')
+    deploy_proto = '/data4/plankton_wi17/mpl/source_domain/spcinsitu/insitu_finetune/code/caffenet/deploy.prototxt'
     trained_weights = os.path.join(domain,'code',model)
 
     # Check if files can be found
@@ -260,9 +260,9 @@ def main(test_data, num_class, domain, classifier, model):
     writer.writerow (['Total Accuracy'])
     writer.writerow ([str (total_accu)])
     writer.writerow (['Prediction Results:'])
-    np.savetxt (outfile, confusion_matrix_count, delimiter=",")
+    np.savetxt (outfile, confusion_matrix_count,'%5.2f',delimiter=",")
     writer.writerow (['Confusion Matrix:'])
-    np.savetxt (outfile, confusion_matrix_rate * 100, delimiter=",")
+    np.savetxt (outfile, confusion_matrix_rate * 100,'%5.2f', delimiter=",")
     print ('Print to', results_filename, 'file successful.')
 
     # Plot ROC Curve
