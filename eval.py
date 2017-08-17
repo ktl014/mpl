@@ -14,13 +14,13 @@ import csv
 import sys
 
 # Specify which source domain & classifier will be used for evaluating the target domain
-source = 'spcinsitu'
-classifier = 'insitu_finetune'
-exp_num = 'exp4'
-model = 'model_' + exp_num + '.caffemodel'
-domain_path = os.path.join ('/data4/plankton_wi17/mpl/source_domain/', source, classifier)
+SRC_DOMAIN = 'spcinsitu'
+CLASSIFIER = 'insitu_finetune'
+EXP_NUM = 'exp4'
+MODEL = 'model_' + exp_num + '.caffemodel'
+SOURCE_ROOT = '/data4/plankton_wi17/mpl/source_domain/'
 temp_outroot = '/data4/plankton_wi17/mpl/source_domain/spcinsitu/insitu_finetune/code'
-outroot = os.path.join('/data4/plankton_wi17/mpl/source_domain',source,classifier,exp_num)
+TARGET_ROOT = '/data4/plankton_wi17/mpl/target_domain'
 # domain_path = lab_google_root
 
 
@@ -165,22 +165,32 @@ def compute_cmatrix(gtruth,pred,num_class):
     return true_positive,true_negative,false_negative,false_positive
 
 
-def main(test_data, num_class, domain, classifier, model):
+def main(test_data, num_class, key):
 
     gpu_id = 1
 
     t1 = timeit.default_timer() # Start timer
 
+    # Construct source root for lmdb file based off source/target evaluation
+    if key != 'target':
+        lmdb_root = os.path.join(SOURCE_ROOT,SRC_DOMAIN,CLASSIFIER,'code')
+    else:
+        lmdb_root = os.path.join(TARGET_ROOT)
+
     # Load LMDB
-    images, labels = load_lmdb(temp_outroot + '/' + test_data)
+    lmdb_filename = lmdb_root + '/' + test_data
+    if not os.path.exists(lmdb_filename): # Check if file exists
+        raise ValueError (os.path.basename(lmdb_filename) + " not found")
+    images, labels = load_lmdb(lmdb_filename)
 
     # Set to GPU mode
     caffe.set_mode_gpu()
     #caffe.set_device(gpu_id)
 
     # Create path to deploy protoxt and weights
-    deploy_proto = '/data4/plankton_wi17/mpl/source_domain/spcinsitu/insitu_finetune/code/caffenet/deploy.prototxt'
-    trained_weights = os.path.join(domain,'code',model)
+    caffe_root = os.path.join(SOURCE_ROOT,SRC_DOMAIN,CLASSIFIER,'code')
+    deploy_proto = caffe_root + '/caffenet/deploy.prototxt'
+    trained_weights = caffe_root + '/' + MODEL
 
     # Check if files can be found
     if not os.path.exists(deploy_proto):
@@ -294,4 +304,4 @@ def write_pred2csv(predictions, probs):
     df.to_csv(outroot + '/' + classifier + '-' + exp_num + '_target_image_path_labels.csv')
 
 if __name__=='__main__':
-    main ('test1.LMDB', 2, domain_path, classifier, model)
+    main ('test1.LMDB', 2)
