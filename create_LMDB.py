@@ -73,20 +73,20 @@ def read_fns_from_csv():
     df_shuffled = df.iloc[np.random.permutation(len(df))]
     df_shuffled = df_shuffled.reset_index(drop=True)
 
-    df_shuffled.to_csv(TARGET_ROOT + '/master1-fourhr_target_image_path_labels.csv')
+    df_shuffled.to_csv(TARGET_ROOT + '/master-fourhr_target_image_path_labels.csv')
 
     # Preprocess csv file for files and labels
-    fns_all = df['img'].tolist()
-    lbs_all = df['img_label'].tolist()
-    imgid_all = df['img_id'].tolist()
-    lbl_count = df.img_label.value_counts()
+    fns_all = df_shuffled['img'].tolist()
+    lbs_all = df_shuffled['img_label'].tolist()
+    imgid_all = df_shuffled['img_id'].tolist()
+    lbl_count = df_shuffled.img_label.value_counts()
     #print(lbl_count)
 
     # Dictionary to match specimen name with label
-    lookup_specimen_name = dict(zip([1,0],df.img_label.unique()))
-    #print(lookup_specimen_name.items())
+    lookup_specimen_name = dict(zip([1, 0], df.img_label.unique()))
+    # print(lookup_specimen_name.items())
 
-    for index,lbl in enumerate(lbs_all):
+    for index, lbl in enumerate(lbs_all):
         if lbl.startswith("[u'Copepod']"):
             lbs_all[index] = 0
         else:
@@ -95,13 +95,13 @@ def read_fns_from_csv():
 
     # Add source path to each image
     src_path = '/data4/plankton_wi17/mpl/target_domain/image_sym'
-    fns_all = [os.path.join(src_path,img_fn) for img_fn in fns_all]
+    fns_all = [os.path.join(src_path, img_fn) for img_fn in fns_all]
 
     # Check if first image can be found to test for entire list
     if not os.path.exists(fns_all[0]):
         print("Does not exist")
 
-    return fns_all, lbs_all
+    return fns_all, lbs_all, imgid_all
 
 def match_img_id():
     img_dict = {}
@@ -125,10 +125,10 @@ def main():
 
     #match_img_id()
     # Get file names and labels
-    test1_fns, test1_lbs = read_fns_from_csv()
+    test1_fns, test1_lbs, test1_id = read_fns_from_csv()
     with open("test.txt",'w') as f:
         for i in range(len(test1_fns)):
-            f.write(str(test1_fns[i] + " " + str(test1_lbs[i]) + '\n'))
+            f.write(str(test1_fns[i] + ";" + str(test1_id[i]) + ";" + str(test1_lbs[i]) + '\n'))
     f.close()
 
     '''
@@ -142,7 +142,7 @@ def main():
     # if os.path.exists("target_add2training.txt"):
     #     print("yes")
 
-    #write_caffe_lmdb(test1_fns, test1_lbs, os.path.join(TARGET_ROOT,'target_fourhrs.LMDB'))
+    write_caffe_lmdb(test1_fns, test1_lbs, os.path.join(TARGET_ROOT,'target_fourhrs.LMDB'))
 
     #lmdb = 'test1.LMDB'
     #ath = '/data4/plankton_wi17/plankton/plankton_binary_classifiers/plankton_phytoplankton/code'
