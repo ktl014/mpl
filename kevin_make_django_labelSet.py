@@ -36,17 +36,6 @@ def prorolbl_upload(proro_dict):
         print TIMESTAMP + ' Total oithona labels: ' + str (len (proro_dict['images']))
     return proro_dict['images']
 
-def targetlbl_upload():
-    target_root = '/data4/plankton_wi17/mpl/target_domain'
-
-    csv_filename = '/spcinsitu/insitu_finetune/exp2/insitu_finetune_preds.csv'
-    df = pd.read_csv(target_root + csv_filename, index_col=0)
-
-    # False negatives
-    mislabel = df['img_id'][(df['img_label']=="[u'Copepod']") & (df['predictions']==1)].tolist()
-
-    return mislabel
-
 def logintoserver():
     # Login to server
     cj = cookielib.CookieJar ()
@@ -78,10 +67,11 @@ def logintoserver():
                                                                                         'Content-type': 'application/json'})
     resp = opener.open (req)
     print 'login ' + resp.read ()
+    return opener, csrf_token
 
 
 
-def upload_labels(lbl_dict, key):
+def upload_labels(lbl_dict, key, opener, csrf_token):
     lbl_json = json.dumps (lbl_dict)
     print 'done making json docs'
 
@@ -94,67 +84,74 @@ def upload_labels(lbl_dict, key):
     resp1 = opener.open (req1)
     print key + ' labs: ' + str (len (resp1.read ()))
 
+def targetlbl_upload():
+    target_root = '/data4/plankton_wi17/mpl/target_domain'
 
+    csv_filename = '/spcinsitu/insitu_finetune/exp2/insitu_finetune_preds.csv'
+    df = pd.read_csv(target_root + csv_filename, index_col=0)
+
+    # False negatives
+    mislabel = df['img_id'][(df['img_label']=="[u'Copepod']") & (df['predictions']==1)].tolist()
+
+    return mislabel
 
 date = datetime.datetime.utcnow()
 date = date.strftime('%s')
 date1 = str(int(date)*1000)
 date2 = str((int(date)*1000)-500)
-# notes
-# is machine
-proro = {"label":"Prorocentrum","tag":"","images":[],"machine_name":"binary_proro_net01","started": date2, "submitted": date1}
-mislabel_copepod = {"label":"mislabel_copepod","tag":"","images":[],"machine_name":"insitu_finetune_exp2","started": date2, "submitted": date1}
+
+mislabel_copepod = {"label":"mislabel_copepod","tag":"","images":[],"is_machine":True,"machine_name":"insitu_finetune_exp2","started": date2, "submitted": date1}
 
 mislabel_copepod['images'] = targetlbl_upload()
 print(len(mislabel_copepod['images']))
 print(mislabel_copepod['images'][0:10])
 
-logintoserver()
-upload_labels(mislabel_copepod,'Mislabel Copepod')
+opener, csrf_token = logintoserver()
+upload_labels(mislabel_copepod,'Mislabel Copepod', opener, csrf_token)
 
 # -------------------------------------------------------------------------------------- #
 
-mislabel_copepod_json = json.dumps (mislabel_copepod)
-print 'done making json docs'
-
-# Login to server
-cj = cookielib.CookieJar()
-
-opener = urllib2.build_opener(
-    urllib2.HTTPCookieProcessor(cj),
-    urllib2.HTTPHandler(debuglevel=1)
-)
-
-login_url = 'http://spc.ucsd.edu/data/admin/?next=/data/admin'
-login_form = opener.open(login_url).read()
-
-csrf_token = html.fromstring(login_form).xpath(
-    '//input[@name="csrfmiddlewaretoken"]/@value'
-)[0]
-
-# make values dict
-values = {
-    'username': 'kevin',
-    'password': 'ceratium',
-    #'csrfmiddlewaretoken': csrf_token,
-}
-
-params = json.dumps(values)
-
-req = urllib2.Request('http://spc.ucsd.edu/data/rois/login_user', params, headers={'X-CSRFToken': str(csrf_token),
-                                                                                   'X-Requested-With': 'XMLHttpRequest',
-                                                                                   'User-agent':'Mozilla/5.0',
-                                                                                   'Content-type': 'application/json'})
-resp = opener.open(req)
-print 'login ' + resp.read()
-
-# write the labels
-req1 = urllib2.Request('http://spc.ucsd.edu/data/rois/label_images', mislabel_copepod_json, headers={'X-CSRFToken': str(csrf_token),
-                                                                                   'X-Requested-With': 'XMLHttpRequest',
-                                                                                   'User-agent':'Mozilla/5.0',
-                                                                                   'Content-type': 'application/json'})
-resp1 = opener.open(req1)
-print 'Mislabel Copepod labs: ' + str(len(resp1.read()))
+# mislabel_copepod_json = json.dumps (mislabel_copepod)
+# print 'done making json docs'
+#
+# # Login to server
+# cj = cookielib.CookieJar()
+#
+# opener = urllib2.build_opener(
+#     urllib2.HTTPCookieProcessor(cj),
+#     urllib2.HTTPHandler(debuglevel=1)
+# )
+#
+# login_url = 'http://spc.ucsd.edu/data/admin/?next=/data/admin'
+# login_form = opener.open(login_url).read()
+#
+# csrf_token = html.fromstring(login_form).xpath(
+#     '//input[@name="csrfmiddlewaretoken"]/@value'
+# )[0]
+#
+# # make values dict
+# values = {
+#     'username': 'kevin',
+#     'password': 'ceratium',
+#     #'csrfmiddlewaretoken': csrf_token,
+# }
+#
+# params = json.dumps(values)
+#
+# req = urllib2.Request('http://spc.ucsd.edu/data/rois/login_user', params, headers={'X-CSRFToken': str(csrf_token),
+#                                                                                    'X-Requested-With': 'XMLHttpRequest',
+#                                                                                    'User-agent':'Mozilla/5.0',
+#                                                                                    'Content-type': 'application/json'})
+# resp = opener.open(req)
+# print 'login ' + resp.read()
+#
+# # write the labels
+# req1 = urllib2.Request('http://spc.ucsd.edu/data/rois/label_images', mislabel_copepod_json, headers={'X-CSRFToken': str(csrf_token),
+#                                                                                    'X-Requested-With': 'XMLHttpRequest',
+#                                                                                    'User-agent':'Mozilla/5.0',
+#                                                                                    'Content-type': 'application/json'})
+# resp1 = opener.open(req1)
+# print 'Mislabel Copepod labs: ' + str(len(resp1.read()))
 
 # make these all json docs:
 """
