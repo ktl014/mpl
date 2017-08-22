@@ -9,6 +9,7 @@ import caffe
 import numpy as np
 import glob
 import pandas as pd
+# import basic_augment
 
 # lab_google_root = '/data4/plankton_wi17/plankton/compare_google_lab/copepod_order/lab' # SVCL Project
 plank_prorocentrum_root = '/data4/plankton_wi17/plankton/plankton_binary_classifiers/plankton_phytoplankton'
@@ -51,20 +52,6 @@ def write_caffe_lmdb(img_fns, labels, lmdb_fn):
             sys.stdout.flush()
     return
 
-def check_caffe_lmdb(lmdb_fn):
-    env = lmdb.open(lmdb_fn, readonly=True)
-    print("Opening " + str(lmdb_fn))
-    with env.begin() as txn:
-        raw_datum = txn.get(b'00000000')
-    datum = caffe.proto.caffe_pb2.Datum()
-    datum.ParseFromString(raw_datum)
-
-    flat_x = np.fromstring(datum.data, dtype=np.uint8)
-    x = flat_x.reshape(datum.channels,datum.height,datum.width)
-    y = datum.label
-    print("X label: " + str(x))
-    print("Y label: " + str(y))
-
 def read_fns_from_csv():
 
     # Open csv file and convert files and labels to list
@@ -102,24 +89,75 @@ def read_fns_from_csv():
         print("Does not exist")
 
     # Combine image id with image
-    copepod_imgid = df["img_id"][df['img_label']=="[u'Copepod']"].tolist()
-    non_copepod_imgid = df["img_id"][df['img_label']=="[]"].tolist()
+    # copepod_imgid = df["img_id"][df['img_label']=="[u'Copepod']"].tolist()
+    # non_copepod_imgid = df["img_id"][df['img_label']=="[]"].tolist()
     copepod = df["img"][df['img_label']=="[u'Copepod']"].tolist() # Copepod images
     non_copepod = df["img"][df['img_label'] == '[]'].tolist () # Non-Copepod images
 
-    copepod_dict={"img":copepod,"img_id":copepod_imgid}
-    non_copepod_dict={"img":non_copepod,"img_id":non_copepod_imgid}
+    # copepod_dict={"img":copepod,"img_id":copepod_imgid}
+    # non_copepod_dict={"img":non_copepod,"img_id":non_copepod_imgid}
 
 
     # Partition image list into training, validation, and testing
 
-    train_fns, train_lbs, val_fns, val_lbs, test1_fns, test1_lbs = partition(copepod_dict,non_copepod_dict)
-    #train_fns, train_lbs = partition(copepod,non_copepod)
+    #train_fns, train_lbs, val_fns, val_lbs, test1_fns, test1_lbs = partition(copepod_dict,non_copepod_dict)
+    train_fns, train_lbs, val_fns, val_lbs, test1_fns, test1_lbs = partition(copepod,non_copepod)
 
     # Return output to get_fns()
     return train_fns, train_lbs, val_fns, val_lbs, test1_fns, test1_lbs
 
-def partition(class_0_dict,class_1_dict):
+def partition(class_0,class_1):
+    f = open("stats_1.txt","w")
+    num_img_class0 = len(class_0)
+    num_img_class1 = len(class_1)
+    print("Class 0 {}".format(num_img_class0))
+    print("Class 1 {}".format(num_img_class1))
+
+
+    # Construct training set
+    train0_img = class_0[:int (num_img_class0 * 0.7)]
+    train1_img = class_1[:int (num_img_class1 * 0.7)]
+
+    # Set training set
+    train_set = train0_img + train1_img
+    train_lbs = [0]*len(train0_img) + [1]*len(train1_img)
+
+    # Construct validation set
+    val0_img = class_0[int (num_img_class0 * 0.7):int (num_img_class0 * 0.8)]
+    val1_img = class_1[int (num_img_class1 * 0.7):int (num_img_class1 * 0.8)]
+
+    # Set validation set
+    val_set = val0_img + val1_img
+    val_lbs = [0]*len(val0_img)+ [1]*len(val1_img)
+
+    # Construct test set
+    test0_img = class_0[int (num_img_class0 * 0.8):]
+    test1_img = class_1[int (num_img_class1 * 0.8):]
+
+    # Set test set
+    test_set = test0_img + test1_img
+    test_lbs = [0]*len(test0_img) + [1]*len(test1_img)
+
+    train_set,train_lbs = randomize_writepaths(train_set, train_lbs, 'train')
+    val_set,val_lbs = randomize_writepaths(val_set, val_lbs, 'val')
+    test_set,test_lbs = randomize_writepaths(test_set, test_lbs, 'test')
+
+    f.write('\t' + "Class 0 {}".format(len(train0_img)) + '\n')
+    f.write('\t' + "Class 1 {}".format(len(train1_img)) + '\n')
+    f.write("Train {}".format(len(train_set)) + '\n')
+
+    f.write('\t' + "Class 0 {}".format(len(val0_img)) + '\n')
+    f.write('\t' + "Class 1 {}".format(len(val1_img)) + '\n')
+    f.write("Val {}".format(len(val_set)) + '\n')
+
+    f.write('\t' + "Class 0 {}".format(len(test0_img)) + '\n')
+    f.write('\t' + "Class 1 {}".format(len(test1_img)) + '\n')
+    f.write("Test {}".format(len(test_set)) + '\n')
+    f.close()
+
+    return train_set, train_lbs, val_set, val_lbs, test_set, test_lbs
+
+def partition_1(class_0_dict,class_1_dict):
     num_img_class0 = len(class_0_dict['img'])
     num_img_class1 = len(class_1_dict['img'])
 
@@ -175,7 +213,7 @@ def partition(class_0_dict,class_1_dict):
 
     return train_set, train_lbs, val_set, val_lbs, test_set, test_lbs
 
-def randomize_writepaths(fns,id,lbs,key):
+def randomize_writepaths(fns,lbs,key):
 
     # Sanity check after partitioning
     if len(fns) != len(lbs):
@@ -187,34 +225,58 @@ def randomize_writepaths(fns,id,lbs,key):
     #fns = [os.path.join(src_path,str(fns[i])) for i in index]
     for i in index:
         fns[i] = os.path.join(src_path,str(fns[i]))
-    id = [id[i] for i in index]
     lbs = np.array([lbs[i] for i in index])
     if DEBUG:
         print(lbs.reshape(len(lbs),1))
+
+    # Write img path and gtruth txt files
     path_txt = open (spcinsitu_root + '/' + classifier + '/code/' + key + '.txt', 'w')
     nSmpl = lbs.size
     for i in range (nSmpl):
-        path_txt.write (str(fns[i]) + ';' + str(id[i]) + ";" + str (lbs[i]) + '\n')
+        path_txt.write (str(fns[i]) + " " + str (lbs[i]) + '\n')
     path_txt.close ()
     return fns,lbs
 
-def match_img_id():
-    '''
-    Scrapped function. No longer need
-    :return: 
-    '''
-    img_dict = {}
-    with open(HOME+"/image_id.txt","r") as f:
-        img_n_id = [line.split('\t') for line in f]
-        for img in img_n_id:
-            img[1] = img[1].rstrip('\n')
-            img[0] = str (img[0]) + '.jpg'
-            img_dict.update([img])
-        if DEBUG:
-            print(img_dict)
-    f.close()
-    return img_dict
+def combine_target2train_dataset():
+    txt_filename = '/data4/plankton_wi17/mpl/target_domain/code_dataset_organization/target_add2training.txt'
+    with open(txt_filename,"r") as target_f:
+        target_list = target_f.readlines()
+    target_f.close()
+    # target_img = []
+    # target_lbs = []
+    target_list = [i.split() for i in target_list]
 
+    # for i in target_list:
+    #     target_img[i] = i.split()[0]
+    #     target_lbs[i] = i.split()[1]
+
+    txt_filename = '/data4/plankton_wi17/mpl/source_domain/spcinsitu/dataset_tools/train.txt'
+    with open(txt_filename,"r") as train_f:
+        train_list = train_f.readlines()
+    train_f.close()
+    train_fns = []
+    train_lbs = []
+    train_list = [i.split() for i in train_list]
+
+    train_list = train_list + target_list
+
+    for i in train_list:
+        train_fns.append(i[0])
+        train_lbs.append(i[1])
+    if DEBUG:
+        if len(train_fns) == len(train_lbs):
+            print("match")
+
+        # for i in train_list:
+    #     train_img[i] = i.split()[0]
+    #     train_lbs[i] = i.split()[1]
+
+    index = range(len(train_fns))
+    random.shuffle(index)
+    train_fns = [train_fns[i] for i in index]
+    train_lbs = np.array([train_lbs[i] for i in index])
+
+    return train_fns, train_lbs
 def main():
 
     # Check if main path to images exists
@@ -223,11 +285,18 @@ def main():
 
     # Get file names and labels
     train_fns, train_lbs, val_fns, val_lbs, test1_fns, test1_lbs = read_fns_from_csv()
+    print("train {} images".format(len(train_fns)))
+    print("val {} images".format(len(val_fns)))
+    print("test {} images".format(len(test1_fns)))
+
+
+    #train_fns, train_lbs = combine_target2train_dataset()
     print("Files received")
 
-    write_caffe_lmdb(train_fns, train_lbs, os.path.join(spcinsitu_root,classifier,'code','train.LMDB'))
-    write_caffe_lmdb(val_fns, val_lbs, os.path.join(spcinsitu_root,classifier,'code','val.LMDB'))
-    write_caffe_lmdb(test1_fns, test1_lbs, os.path.join(spcinsitu_root,classifier,'code','test1.LMDB'))
+    #write_caffe_lmdb(train_fns, train_lbs, os.path.join(spcinsitu_root,classifier,'code','train_combined-w-target.LMDB'))
+    #write_caffe_lmdb(train_fns, train_lbs, os.path.join(spcinsitu_root,classifier,'code','train.LMDB'))
+    #write_caffe_lmdb(val_fns, val_lbs, os.path.join(spcinsitu_root,classifier,'code','val.LMDB'))
+    #write_caffe_lmdb(test1_fns, test1_lbs, os.path.join(spcinsitu_root,classifier,'code','test1.LMDB'))
 
     #lmdb = 'test1.LMDB'
     #ath = '/data4/plankton_wi17/plankton/plankton_binary_classifiers/plankton_phytoplankton/code'
@@ -236,6 +305,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+    #combine_target2train_dataset()
     '''
     1. GENERAL_PATH
     2. which files to make lmdb for
