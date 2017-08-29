@@ -13,7 +13,6 @@ import timeit
 import csv
 import sys
 
-<<<<<<< HEAD
 # Specify which source domain & classifier will be used for evaluation
 HOME = '/data4/plankton_wi17/mpl/source_domain/'
 # Target = True
@@ -28,14 +27,6 @@ if source == 'spcombo':
     dataset = 'all100'
     datasetDegree = dataset + '_0'
     outroot = os.path.join(outroot, dataset, datasetDegree)
-=======
-# Specify which source domain & classifier will be used for evaluating the target domain
-source = 'spcbench'
-classifier = 'bench_from_scratch'
-exp_num = 'exp7'
-model = 'model_' + exp_num + '.caffemodel'
-outroot = os.path.join ('/data4/plankton_wi17/mpl/source_domain/', source, classifier)
->>>>>>> dbbbb2372ef971ae091ec0bd1a7089efae9a9844
 
 def main(test_data, num_class):
 
@@ -299,9 +290,6 @@ def compute_cmatrix(gtruth,pred,num_class):
 
     return true_positive,true_negative,false_negative,false_positive
 
-<<<<<<< HEAD
-=======
-
 def main(test_data, num_class):
 
     gpu_id = 1
@@ -425,7 +413,6 @@ def main(test_data, num_class):
     # Plot ROC Curve
     plot_roc_curve(gtruth,probs,classifier,num_class)
 
->>>>>>> dbbbb2372ef971ae091ec0bd1a7089efae9a9844
 def write_pred2csv(predictions, probs):
     '''
     Write predictions and confidence level to csv file to upload to server
@@ -435,11 +422,7 @@ def write_pred2csv(predictions, probs):
     '''
 
     # Load dataframe
-<<<<<<< HEAD
-    file_name = outroot + '/code/train.txt'
-=======
     file_name = outroot + '/code/test.txt'
->>>>>>> dbbbb2372ef971ae091ec0bd1a7089efae9a9844
     df = pd.read_csv(file_name,sep=' ' ,header=None)
     df.columns = ['path','gtruth']
 
@@ -472,8 +455,4 @@ def write_pred2txt(predictions, probs):
     results_txt.close()
 
 if __name__=='__main__':
-<<<<<<< HEAD
-    main ('train.LMDB', 2)
-=======
     main ('test1.LMDB', 2)
->>>>>>> dbbbb2372ef971ae091ec0bd1a7089efae9a9844
