@@ -14,12 +14,11 @@ import csv
 import sys
 
 # Specify which source domain & classifier will be used for evaluating the target domain
-source = 'spcinsitu'
-classifier = 'insitu_from_scratch'
-exp_num = 'exp2'
+source = 'spcbench'
+classifier = 'bench_from_scratch'
+exp_num = 'exp7'
 model = 'model_' + exp_num + '.caffemodel'
 outroot = os.path.join ('/data4/plankton_wi17/mpl/source_domain/', source, classifier)
-# domain_path = lab_google_root
 
 
 def load_lmdb(fn):
@@ -164,22 +163,23 @@ def compute_cmatrix(gtruth,pred,num_class):
     return true_positive,true_negative,false_negative,false_positive
 
 
-def main(test_data, num_class, domain, classifier, model):
+def main(test_data, num_class):
 
     gpu_id = 1
 
     t1 = timeit.default_timer() # Start timer
 
     # Load LMDB
-    images, labels = load_lmdb(outroot + '/' + test_data)
+    inputfile_dir = outroot + '/code' # Main directory for input files (lmdb, caffe prototxt, etc)
+    images, labels = load_lmdb(outroot + '/code/' + test_data)
 
     # Set to GPU mode
     caffe.set_mode_gpu()
     #caffe.set_device(gpu_id)
 
     # Create path to deploy protoxt and weights
-    deploy_proto = outroot + '/code/caffenet/deploy.prototxt'
-    trained_weights = os.path.join(domain,'code',model)
+    deploy_proto = inputfile_dir + '/caffenet/deploy.prototxt'
+    trained_weights = inputfile_dir + '/{}'.format(model)
 
     # Check if files can be found
     if not os.path.exists(deploy_proto):
@@ -235,8 +235,11 @@ def main(test_data, num_class, domain, classifier, model):
     print (predictions[0:25])
     print ('Total Accuracy', total_accu)
 
-    # Write predictions to img path lbl csv file
-    write_pred2csv(predictions,probs)
+    # Write predictions to img path lbl txt/csv file
+    if source == "spcbench":
+        write_pred2txt(predictions, probs)
+    else:
+        write_pred2csv(predictions,probs)
 
     # Create array for confusion matrix with dimensions based on number of classes
     confusion_matrix_count = np.zeros ((num_class, num_class))
@@ -252,12 +255,28 @@ def main(test_data, num_class, domain, classifier, model):
         confusion_matrix_rate[i,:] = (confusion_matrix_count[i,:])/class_count[i,0]
     confusion_matrix_rate = np.around(confusion_matrix_rate, decimals=4)
 
+    # Calculate Precision Rate
+    precision = (confusion_matrix_count[0,0]/(confusion_matrix_count[0,0]+confusion_matrix_count[1,0]))*100 # TP / (FP+TP)
+    print("Precision {}".format(precision))
+
+    # Calculate side lobes
+    S = np.sort (probs)
+    S = S[::-1]
+    confidence_level = [(S[i, 1] - S[i, 0]) / S[i, 1] for i in range (len (S))]
+    confidence_level = np.asarray(confidence_level)
+    avg_confidence = confidence_level.mean()*100
+    print ("Confidence Level {}".format(avg_confidence))
+
     results_filename = os.path.join (outroot,exp_num, classifier + '-' + exp_num + '_Results.csv')
     outfile = open (results_filename, 'wb')
     writer = csv.writer (outfile, delimiter=",")
-    writer.writerow (['Binary Classifier: ' + domain.split ('/')[6]])
+    writer.writerow (['Binary Classifier: ' + outroot.split ('/')[6]])
     writer.writerow (['Total Accuracy'])
     writer.writerow ([str (total_accu)])
+    writer.writerow (['Precision Rate'])
+    writer.writerow ([str (precision)])
+    writer.writerow (['Confidence Level'])
+    writer.writerow ([str (avg_confidence)])
     writer.writerow (['Prediction Results:'])
     np.savetxt (outfile, confusion_matrix_count,'%5.2f',delimiter=",")
     writer.writerow (['Confusion Matrix:'])
@@ -293,5 +312,20 @@ def write_pred2csv(predictions, probs):
     csv_filename = os.path.join(outroot,exp_num,classifier + '-' + exp_num + '_pred.csv')
     df.to_csv(csv_filename)
 
+def write_pred2txt(predictions, probs):
+    '''
+    Write predictions and confidence level to txt file to upload to server
+    :param predictions: predictions outputted from classifier
+    :param probs: probabilities of each image
+    :return: n/a
+    '''
+    results_txt = open(outroot + '/' + exp_num + '/' + 'Image_preds.txt', 'w')
+    for i in range(len(predictions)):
+        results_txt.write(str(probs[i,0])+' '+str(probs[i,1]))
+        results_txt.write(' ')
+        results_txt.write(str(predictions[i]))
+        results_txt.write('\n')
+    results_txt.close()
+
 if __name__=='__main__':
-    main ('test1.LMDB', 2, domain_path, classifier, model)
+    main ('test1.LMDB', 2)
