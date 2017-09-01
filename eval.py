@@ -3,6 +3,7 @@ import cPickle as pickle
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 import numpy as np
 from sklearn.metrics import *
 import caffe
@@ -281,8 +282,8 @@ def plot_roc_curve(gt,prob,classifier,num_class, dest_path):
 
     #fpr["micro"], tpr["micro"], _ = roc_curve (gtruth.ravel (), pred.ravel ())
 
-    #fpr["micro"], tpr["micro"], _ = roc_curve (gtruth.ravel (), prob.ravel ())
-    #roc_auc["micro"] = auc (fpr["micro"], tpr["micro"])
+    fpr["micro"], tpr["micro"], _ = roc_curve (gtruth.ravel (), prob.ravel ())
+    roc_auc["micro"] = auc (fpr["micro"], tpr["micro"])
 
     plt.figure()
     lw = 2
@@ -340,13 +341,13 @@ def write_pred2csv(predictions, probs, inputfile_dir, dest_path):
         df.columns = ['path','gtruth']
 
     # Add predictions to additional column
-    df['predictions']= predictions
+    df1['predictions']= predictions
 
     # Calculate side lobes
     S = np.sort(probs)
     S = S[::-1]
     confidence_level = [(S[i,1]-S[i,0])/S[i,1] for i in range(len(S))]
-    df['confidence_level'] = confidence_level
+    df1['confidence_level'] = confidence_level
 
     # Save changes to csv output
     csv_filename = os.path.join(dest_path,classifier + '-' + exp_num + '_pred.csv')
@@ -397,6 +398,7 @@ def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix'
     plt.tight_layout()
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
+    df1.to_csv(outroot + '/' + classifier + '_preds.csv')
 
 if __name__=='__main__':
     main ('train.LMDB', 2)
