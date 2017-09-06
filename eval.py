@@ -3,7 +3,6 @@ import cPickle as pickle
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 import numpy as np
 from sklearn.metrics import *
 import caffe
@@ -17,7 +16,7 @@ import itertools
 
 # Specify which source domain & classifier will be used for evaluation
 HOME = '/data4/plankton_wi17/mpl/source_domain'
-Target = False
+Target = True
 source = 'spcombo'
 classifier = 'combo_finetune'
 exp_num = 'exp1'
@@ -25,35 +24,31 @@ model = 'model_' + exp_num + '.caffemodel'
 outroot = os.path.join (HOME, source, classifier)
 if source == 'spcombo':
     dataset = 'bench100'
-    datasetDegree = dataset + '_2'
+    datasetDegree = dataset + '_80'
     outroot = os.path.join(outroot, dataset, datasetDegree)
 
 def main(test_data, num_class):
 
-    gpu_id = 1
+
 
     t1 = timeit.default_timer() # Start timer
 
-    inputfile_dir = "" # Main directory for input files (lmdb, caffe prototxt, etc)
-    # if Target:
-    #     lmdbfile = HOME + '/{}'.format(test_data)
-    #     inputfile_dir = outroot.replace('target','source') + '/code'
-    # else:
-    #     inputfile_dir = outroot + '/code'
-    #     lmdbfile = inputfile_dir + '/{}'.format(test_data)
-    inputfile_dir = outroot + '/code'
-    lmdbfile = inputfile_dir + '/{}'.format(test_data)
 
-    # Load LMDB
-    images, labels = load_lmdb(lmdbfile)
+    inputfile_dir = outroot + '/code' # Main directory for input files (lmdb, caffe prototxt, etc)
+    lmdbfile = inputfile_dir + '/{}'.format(test_data)
+    if Target:
+        lmdbfile = '/data4/plankton_wi17/mpl/target_domain/aspect_target_fourhrs.LMDB'
+    images, labels = load_lmdb(lmdbfile) # Load LMDB
 
     # Set to GPU mode
+    gpu_id = 1
     caffe.set_mode_gpu()
     #caffe.set_device(gpu_id)
 
     # Create path to deploy protoxt and weights
     deploy_proto = inputfile_dir + '/caffenet/deploy.prototxt'
     trained_weights = inputfile_dir + '/{}'.format(model)
+    print('Using {}'.format(trained_weights))
 
     # Check if files can be found
     if not os.path.exists(deploy_proto):
@@ -117,7 +112,7 @@ def main(test_data, num_class):
         confusion_matrix_rawcount[t, p] += 1
     confusion_matrix_rate = np.zeros((num_class,num_class))
     for i in range(num_class):
-        confusion_matrix_rate[i,:] = (confusion_matrix_rawcount[i,:])/class_count[i,0]
+        confusion_matrix_rate[i,:] = (confusion_matrix_rawcount[i,:])/class_count[i,0]*100
     confusion_matrix_rate = np.around(confusion_matrix_rate, decimals=4)
 
     # Calculate Precision Rate
@@ -137,10 +132,9 @@ def main(test_data, num_class):
     avg_confidence = confidence_level.mean()*100
     print ("Confidence Level {}".format(avg_confidence))
 
-    if Target:
-        HOME = HOME.replace('source','target')
-
     dest_path = os.path.join (outroot,exp_num)
+    if Target:
+        dest_path = dest_path.replace("source","target")
     if not os.path.exists (dest_path):
         os.makedirs (dest_path)
 
@@ -165,7 +159,7 @@ def main(test_data, num_class):
     writer.writerow (['Prediction Results:'])
     np.savetxt (outfile, confusion_matrix_rawcount,'%5.2f',delimiter=",")
     writer.writerow (['Confusion Matrix:'])
-    np.savetxt (outfile, confusion_matrix_rate * 100,'%5.2f', delimiter=",")
+    np.savetxt (outfile, confusion_matrix_rate,'%5.2f', delimiter=",")
     print ('Print to', results_filename, 'file successful.')
 
     # Plot ROC Curve
@@ -178,7 +172,7 @@ def main(test_data, num_class):
     plot_confusion_matrix(confusion_matrix_rawcount,classes=classNames,title='Confusion Matrix (Raw Count)')
     plt.subplot(212)
     plot_confusion_matrix(confusion_matrix_rate,classes=classNames,title='Confusion Matrix (Rate)')
-    cnf_plot_filename = os.path.join(outroot,exp_num,'cnf_matrix.png')
+    cnf_plot_filename = os.path.join(dest_path,'cnf_matrix.png')
     plt.savefig(cnf_plot_filename)
 
 def load_lmdb(fn):
@@ -206,60 +200,6 @@ def prep_image(img):
     img -= np.array([104., 117., 123.]).reshape((3,1,1)) # demean (same as in trainval.prototxt
     return img
 
-def eval_results():
-    objects = []
-
-    f1 = open('gtruth','r')
-    gt = pickle.load(f1)
-    f1.close()
-    #print(gtruth.reshape((11224,1)))
-
-    f2 = open('pred','r')
-    pred = pickle.load(f2)
-    f2.close()
-    print(pred.shape)
-    #print(pred.reshape((11224,1)))
-
-    f3 = open('prob','r')
-    prob = pickle.load(f3)
-    f3.close()
-    prob = np.concatenate(prob,0)
-    print(prob.shape)
-
-    accuracy = (pred == gt).mean()*100
-    print(accuracy)
-
-    # tp, tn, fn, fp = compute_cmatrix(gtruth,pred,2)
-
-    tn, fp, fn, tp = confusion_matrix(gt,pred).ravel() #,labels=['copepod','non-copepod'])
-
-    fpr = dict()
-    tpr = dict()
-    roc_auc = dict()
-    n_classes = 2
-    pred_roc = np.zeros_like (prob)
-    pred_roc[np.arange (len (prob)), prob.argmax (1)] = 1
-
-    gtruth = np.zeros((len(gt),2))
-    for i in range(len(gt)):
-        if gt[i]==1:
-            gtruth[i,1] = 1
-        else:
-            gtruth[i,0] = 1
-
-    #fpr, tpr,_ = roc_curve (gtruth, pred, pos_label=0)
-    for i in range(n_classes):
-        fpr[i],tpr[i],_ = roc_curve(gtruth[:,i],prob[:,i])
-        roc_auc[i] = auc (fpr[i], tpr[i])
-
-    #fpr["micro"], tpr["micro"], _ = roc_curve (gtruth.ravel (), pred.ravel ())
-
-    fpr["micro"], tpr["micro"], _ = roc_curve (gtruth.ravel (), prob.ravel ())
-    roc_auc["micro"] = auc (fpr["micro"], tpr["micro"])
-
-    #plot_roc_curve(n_classes,fpr,tpr)
-    plot_roc_curve(n_classes,fpr,tpr,roc_auc)
-
 def plot_roc_curve(gt,prob,classifier,num_class, dest_path):
     fpr = dict()
     tpr = dict()
@@ -282,8 +222,8 @@ def plot_roc_curve(gt,prob,classifier,num_class, dest_path):
 
     #fpr["micro"], tpr["micro"], _ = roc_curve (gtruth.ravel (), pred.ravel ())
 
-    fpr["micro"], tpr["micro"], _ = roc_curve (gtruth.ravel (), prob.ravel ())
-    roc_auc["micro"] = auc (fpr["micro"], tpr["micro"])
+    #fpr["micro"], tpr["micro"], _ = roc_curve (gtruth.ravel (), prob.ravel ())
+    #roc_auc["micro"] = auc (fpr["micro"], tpr["micro"])
 
     plt.figure()
     lw = 2
@@ -336,18 +276,18 @@ def write_pred2csv(predictions, probs, inputfile_dir, dest_path):
         df = pd.read_csv (file_name, sep=';', header=None)
         df.columns = ['path', 'img_id', 'gtruth']
     else:
-        file_name = inputfile_dir + '/train.txt'
+        file_name = inputfile_dir + '/test.txt'
         df = pd.read_csv(file_name,sep=' ' ,header=None)
         df.columns = ['path','gtruth']
 
     # Add predictions to additional column
-    df1['predictions']= predictions
+    df['predictions']= predictions
 
     # Calculate side lobes
     S = np.sort(probs)
     S = S[::-1]
     confidence_level = [(S[i,1]-S[i,0])/S[i,1] for i in range(len(S))]
-    df1['confidence_level'] = confidence_level
+    df['confidence_level'] = confidence_level
 
     # Save changes to csv output
     csv_filename = os.path.join(dest_path,classifier + '-' + exp_num + '_pred.csv')
@@ -398,7 +338,10 @@ def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix'
     plt.tight_layout()
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
-    df1.to_csv(outroot + '/' + classifier + '_preds.csv')
 
 if __name__=='__main__':
-    main ('train.LMDB', 2)
+    if Target:
+        test_data = 'aspect_target_fourhrs.LMDB'
+    else:
+        test_data = 'test1.LMDB'
+    main (test_data, 2)
