@@ -98,9 +98,12 @@ def main(test_data, num_class):
     predictions = probs.argmax (1)
     gtruth = np.array (labels)
     total_accu = (predictions == gtruth).mean () * 100
+    error_rate = (predictions != gtruth).mean() * 100
     print ('predictions shape:', predictions.shape)
     print (predictions[0:25])
     print ('Total Accuracy', total_accu)
+    print ('Error Rate', error_rate)
+
 
     # Create array for confusion matrix with dimensions based on number of classes
     confusion_matrix_rawcount = np.zeros ((num_class, num_class))
@@ -148,17 +151,18 @@ def main(test_data, num_class):
     outfile = open (results_filename, 'wb')
     writer = csv.writer (outfile, delimiter=",")
     writer.writerow (['Binary Classifier: ' + outroot.split ('/')[6]])
-    writer.writerow (['Total Accuracy'])
-    writer.writerow ([str (total_accu)])
-    writer.writerow (['Precision Rate'])
-    writer.writerow ([str (precision)])
-    writer.writerow (['Recall Rate'])
-    writer.writerow ([str (recall)])
-    writer.writerow (['Confidence Level'])
-    writer.writerow ([str (avg_confidence)])
-    writer.writerow (['Prediction Results:'])
+    writer.writerow (['Total Accuracy\t' + str (total_accu)])
+    writer.writerow (['Error Rate\t' + str (error_rate)])
+    #writer.writerow ([str (total_accu)])
+    writer.writerow (['Precision Rate\t' + str (precision)])
+    #writer.writerow ([str (precision)])
+    writer.writerow (['Recall Rate\t' + str (recall)])
+    #writer.writerow ([str (recall)])
+    writer.writerow (['Confidence Level\t' + str (avg_confidence)])
+    #writer.writerow ([str (avg_confidence)])
+    writer.writerow (['Confusion Matrix (Raw Count):'])
     np.savetxt (outfile, confusion_matrix_rawcount,'%5.2f',delimiter=",")
-    writer.writerow (['Confusion Matrix:'])
+    writer.writerow (['Confusion Matrix (Rate):'])
     np.savetxt (outfile, confusion_matrix_rate,'%5.2f', delimiter=",")
     print ('Print to', results_filename, 'file successful.')
 
@@ -272,7 +276,7 @@ def write_pred2csv(predictions, probs, inputfile_dir, dest_path):
 
     # Load dataframe
     if Target:
-        file_name = 'aspect_target_image_path_labels.txt'
+        file_name = '/data4/plankton_wi17/mpl/target_domain/aspect_target_image_path_labels.txt'
         df = pd.read_csv (file_name, sep=';', header=None)
         df.columns = ['path', 'img_id', 'gtruth']
     else:
