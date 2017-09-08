@@ -23,8 +23,8 @@ exp_num = 'exp1'
 model = 'model_' + exp_num + '.caffemodel'
 outroot = os.path.join (HOME, source, classifier)
 if source == 'spcombo':
-    dataset = 'bench100'
-    datasetDegree = dataset + '_80'
+    dataset = 'insitu-noise100'
+    datasetDegree = dataset + '_100-15'
     outroot = os.path.join(outroot, dataset, datasetDegree)
 
 def main(test_data, num_class):
@@ -126,6 +126,15 @@ def main(test_data, num_class):
     recall = (confusion_matrix_rawcount[0,0]/(confusion_matrix_rawcount[0,0]+confusion_matrix_rawcount[0,1]))*100 # TP / (FN+TP)
     print("Recall {}".format(recall))
 
+    if Target:
+        # Normalized Accuracy
+        normAccu = (confusion_matrix_rate[0,0]+confusion_matrix_rate[1,1])/2.00
+        print("Normalized Accuracy {}".format(normAccu))
+
+        # Normalized Error Rate
+        normError = 100.00 - normAccu
+        print("Normalized Error {}".format(normError))
+
 
     # Calculate side lobes
     S = np.sort (probs)
@@ -151,15 +160,21 @@ def main(test_data, num_class):
     outfile = open (results_filename, 'wb')
     writer = csv.writer (outfile, delimiter=",")
     writer.writerow (['Binary Classifier: ' + outroot.split ('/')[6]])
-    writer.writerow (['Total Accuracy\t' + str (total_accu)])
-    writer.writerow (['Error Rate\t' + str (error_rate)])
-    #writer.writerow ([str (total_accu)])
-    writer.writerow (['Precision Rate\t' + str (precision)])
-    #writer.writerow ([str (precision)])
-    writer.writerow (['Recall Rate\t' + str (recall)])
-    #writer.writerow ([str (recall)])
-    writer.writerow (['Confidence Level\t' + str (avg_confidence)])
-    #writer.writerow ([str (avg_confidence)])
+    writer.writerow (['Total Accuracy'])
+    writer.writerow ([str (total_accu)])
+    writer.writerow (['Error Rate'])
+    writer.writerow ([str (error_rate)])
+    if Target:
+        writer.writerow (['Normalized Accuracy'])
+        writer.writerow ([str (normAccu)])
+        writer.writerow (['Normalized Error Rate'])
+        writer.writerow ([str (normError)])
+    writer.writerow (['Precision Rate'])
+    writer.writerow ([str (precision)])
+    writer.writerow (['Recall Rate'])
+    writer.writerow ([str (recall)])
+    writer.writerow (['Confidence Level'])
+    writer.writerow ([str (avg_confidence)])
     writer.writerow (['Confusion Matrix (Raw Count):'])
     np.savetxt (outfile, confusion_matrix_rawcount,'%5.2f',delimiter=",")
     writer.writerow (['Confusion Matrix (Rate):'])
