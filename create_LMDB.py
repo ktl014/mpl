@@ -11,11 +11,11 @@ import glob
 import pandas as pd
 import aspect_resize as a_resize
 
-# lab_google_root = '/data4/plankton_wi17/plankton/compare_google_lab/copepod_order/lab' # SVCL Project
-plank_prorocentrum_root = '/data4/plankton_wi17/plankton/plankton_binary_classifiers/plankton_phytoplankton'
-spcinsitu_root = '/data4/plankton_wi17/mpl/source_domain/spcinsitu'
-classifier = 'insitu_finetune'
-# TIME_STAMP = '2017-4-10' # Prorocentrum Project
+
+lab_google_root = '/data4/plankton_wi17/plankton/compare_google_lab/copepod_order/lab'
+TARGET_ROOT = '/data4/plankton_wi17/mpl/target_domain'
+GENERAL_CODE_PATH = '/data4/plankton_wi17/mpl/target_domain/code_dataset_organization'
+GENERAL_IMAGES_PATH = '/data4/plankton_wi17/mpl/target_domain/image_sym'
 DEBUG = False
 
 
@@ -105,7 +105,6 @@ def read_fns_from_csv():
 
     # Partition image list into training, validation, and testing
 
-    #train_fns, train_lbs, val_fns, val_lbs, test1_fns, test1_lbs = partitio_1(copepod_dict,non_copepod_dict)
     train_fns, train_lbs, val_fns, val_lbs, test1_fns, test1_lbs = partition(copepod,non_copepod)
 
     # Return output to get_fns()
@@ -118,6 +117,7 @@ def partition(class_0,class_1):
     if DEBUG:
         print("Class 0 {}".format(num_img_class0))
         print("Class 1 {}".format(num_img_class1))
+
 
 
     # Construct training set
@@ -302,10 +302,30 @@ def combine_target2train_dataset():
 def main():
 
     # Check if main path to images exists
-    if not os.path.exists(spcinsitu_root+'/all_insitu_images'):
-        raise ValueError ('Image dir not found')
+    if not os.path.exists(GENERAL_IMAGES_PATH):
+        print("DirNotFoundError: Main path to images not found")
+        return
 
+    #match_img_id()
     # Get file names and labels
+    test1_fns, test1_lbs = read_fns_from_csv()
+    with open("test.txt",'w') as f:
+        for i in range(len(test1_fns)):
+            f.write(str(test1_fns[i] + " " + str(test1_lbs[i]) + '\n'))
+    f.close()
+
+    '''
+    Modified code to add more training data to spcinsitu image classifier
+    '''
+    # with open("target_add2training.txt","w") as f:
+    #     nSmpl = test1_lbs.size
+    #     for i in range(nSmpl):
+    #         f.write(str(test1_fns[i]) + ' ' + str(test1_lbs[i]) + '\n')
+    # f.close()
+    # if os.path.exists("target_add2training.txt"):
+    #     print("yes")
+
+    #write_caffe_lmdb(test1_fns, test1_lbs, os.path.join(TARGET_ROOT,'target_fourhrs.LMDB'))
     train_fns, train_lbs, val_fns, val_lbs, test1_fns, test1_lbs = read_fns_from_csv()
     print("train {} images".format(len(train_fns)))
     print("val {} images".format(len(val_fns)))
@@ -320,6 +340,7 @@ def main():
     write_caffe_lmdb(val_fns, val_lbs, os.path.join(spcinsitu_root,classifier,'code','val.LMDB'))
     write_caffe_lmdb(test1_fns, test1_lbs, os.path.join(spcinsitu_root,classifier,'code','test1.LMDB'))
 
+
     #lmdb = 'test1.LMDB'
     #ath = '/data4/plankton_wi17/plankton/plankton_binary_classifiers/plankton_phytoplankton/code'
     #lmdb_to_read = os.path.join(path,lmdb)
@@ -328,6 +349,7 @@ def main():
 if __name__ == '__main__':
     main()
     #combine_target2train_dataset()
+
     '''
     1. GENERAL_PATH
     2. which files to make lmdb for
