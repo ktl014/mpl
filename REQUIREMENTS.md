@@ -26,7 +26,7 @@ Finally, after logging into the lab server, enter the command line below to redi
 
 # Alternative Option
 Alternative options include using TeamViewer to directly access the lab computers and using Putty to login into the server
-- Download it from here for your respective operating system:
+- Download it from here for your respective operating system: https://www.teamviewer.com/en/download/mac/
 - To access teamviewer, contact me @ kevin.le@gmail.com for the account information
 
 
