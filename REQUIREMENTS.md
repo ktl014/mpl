@@ -1,0 +1,4 @@
+Author: Kevin Le
+Date: Thursday, September 14, 2017 10:38:00
+
+#Connecting to SVCL GPU Server
