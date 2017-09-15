@@ -1,0 +1,14 @@
+net: "caffenet/train_val.prototxt" # path to the network definition
+test_iter: 20                   # how many mini-batches to test in each validation phase
+test_interval: 250              # how often do we call the test phase
+base_lr: 0.0001                  # base learning rate
+lr_policy: "step"               # step means to decrease lr after a number of iterations
+gamma: 0.5                      # ratio of decrement in each step
+stepsize: 2500                  # how often do we step (step_interval)
+display: 20                     # how often do we print training loss
+max_iter: 5000
+momentum: 0.9
+weight_decay: 0.0005            # regularization
+snapshot: 5000                  # saves progress at value
+snapshot_prefix: "caffenet-exp6_train"
+solver_mode: GPU

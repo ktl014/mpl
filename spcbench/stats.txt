@@ -1,0 +1,30 @@
+key: train
+# images: 27977
+# labels: 27977
+# target class0: 1
+# other class1: 8
+# specimens class0: 27
+# specimens class1: 40
+# target class0 files: 10464
+# target class1 files: 17513
+
+key: val
+# images: 5552
+# labels: 5552
+# target class0: 1
+# other class1: 8
+# specimens class0: 27
+# specimens class1: 40
+# target class0 files: 2076
+# target class1 files: 3476
+
+key: test1
+# images: 11224
+# labels: 11224
+# target class0: 1
+# other class1: 8
+# specimens class0: 27
+# specimens class1: 40
+# target class0 files: 4198
+# target class1 files: 7026
+
