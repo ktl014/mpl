@@ -183,7 +183,7 @@ def main(test_data, num_class):
     print ('Print to', results_filename, 'file successful.')
 
     # Plot ROC Curve
-    plot_roc_curve(gtruth, probs, CLASSIFIER_NAME, num_class, dest_path)
+    plot_roc_curve(gtruth, probs, num_class, dest_path)
 
     # Plot Confusion Matrix
     classNames = ['copepod','non-copepod']
