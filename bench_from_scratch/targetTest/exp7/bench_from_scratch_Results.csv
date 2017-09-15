@@ -1,0 +1,13 @@
+Binary Classifier: bench_from_scratch
+Total Accuracy
+88.8470643021
+Precision Rate
+1.875
+Confidence Level
+98.9618837833
+Prediction Results:
+ 3.00,2717.00
+157.00,22892.00
+Confusion Matrix:
+ 0.11,99.89
+ 0.68,99.32

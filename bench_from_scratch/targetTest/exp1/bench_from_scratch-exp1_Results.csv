@@ -1,0 +1,21 @@
+Binary Classifier: bench_from_scratch
+Total Accuracy
+88.0049672087
+Error Rate
+11.9950327913
+Normalized Accuracy
+49.7951
+Normalized Error Rate
+50.2049
+Precision Rate
+8.31460674157
+Recall Rate
+1.36029411765
+Confidence Level
+96.7089891434
+Confusion Matrix (Raw Count):
+37.00,2683.00
+408.00,22641.00
+Confusion Matrix (Rate):
+ 1.36,98.64
+ 1.77,98.23
