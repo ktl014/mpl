@@ -6,6 +6,8 @@ import sys
 import argparse
 import caffe
 import timeit
+
+# Specify which exp_num to use. A new solver.prototxt must be made to match with desired exp_num
 EXP_NUM = 'exp2'
 
 def main():
