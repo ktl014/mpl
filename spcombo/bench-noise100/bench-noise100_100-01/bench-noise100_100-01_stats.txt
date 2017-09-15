@@ -1,0 +1,24 @@
+srcdomain: spcbench
+	Class 1: 0
+	Class 0: 11716
+srcdomain: spcinsitu
+	Class 1: 2382
+	Class 0: 16
+Total train files: 14114
+
+srcdomain: spcbench
+	Class 1: 0
+	Class 0: 1674
+srcdomain: spcinsitu
+	Class 1: 341
+	Class 0: 2
+Total val files: 2017
+
+srcdomain: spcbench
+	Class 1: 0
+	Class 0: 3348
+srcdomain: spcinsitu
+	Class 1: 681
+	Class 0: 5
+Total test files: 4034
+

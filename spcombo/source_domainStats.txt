@@ -1,0 +1,8 @@
+/data4/plankton_wi17/mpl/source_domain/spcombo/combo_images_exp1/spcinsitu
+class1 3404
+/data4/plankton_wi17/mpl/source_domain/spcombo/combo_images_exp1/spcinsitu
+class0 2356
+/data4/plankton_wi17/mpl/source_domain/spcombo/combo_images_exp1/spcbench
+class1 28015
+/data4/plankton_wi17/mpl/source_domain/spcombo/combo_images_exp1/spcbench
+class0 16738
