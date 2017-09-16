@@ -13,7 +13,7 @@ We will evaluate these three source domains' experiments by testing them on our 
 # Project Report
 Below is a report of all my experiments and their results to better explain my research.
 
-<a href="//www.slideshare.net/secret/rzG5BiAbYDVLl" title="Mpl summer 2017 project report" target="_blank">Mpl summer 2017 project report</a> </strong>
+<a href="//www.slideshare.net/secret/rzG5BiAbYDVLl" title="Mpl summer 2017 project report" target="_blank">Mpl summer 2017 project report</a> 
 
 # Python scripts
 The eval.py and train_alexnet.py script are definitive python scripts that are robust enough to use for all of the source domain experiments, as well as evaluating the target domain. More information regarding how to navigate through these scripts will come!
