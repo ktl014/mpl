@@ -14,7 +14,7 @@ import shutil
 import cv2
 
 DEBUG = False
-
+spcombo_root = '/data4/plankton_wi17/mpl/source_domain/spcombo'
 def write_caffe_lmdb(img_fns, labels, lmdb_fn):
     '''
     Writes LMDB file from image files and labels
@@ -34,9 +34,10 @@ def write_caffe_lmdb(img_fns, labels, lmdb_fn):
         # Write image datum
         datum = caffe.proto.caffe_pb2.Datum()
 
-        img = caffe.io.load_image(img_fns[i])   # Read image
+        img = caffe.io.load_image(img_fns[i], color=False)   # Read image
         # img = caffe.io.resize_image(img, np.array([256, 256]))     # Resize to 256
         img = (img*255).astype(np.uint8)        # [0,1]->[0,255]
+        img = np.dstack((img, img, img))        # Concatenate grayscale along 3rd dimension
         img = aspect_resize(img)       # Preserve aspect ratio and resize to 256
         if i == 1:
             cv2.imwrite(os.getcwd() + '/resized_img.png',img)
@@ -210,7 +211,7 @@ def get_fns(key, stats_f, partition, dataset):
                 percentage = partition[1]
 
     # Initialize destination path to write train, val, and test text files to
-    dest_path = os.path.join(os.getcwd(),subset_name.split('_')[0],subset_name,'code')  # Grabs current dir to write dest path
+    dest_path = os.path.join(spcombo_root + '/combo_finetune',subset_name.split('_')[0],subset_name,'code')  # Grabs current dir to write dest path
     fns, lbs = randomize_writepaths(fns,lbs,key,dest_path)
     return fns, lbs
 
@@ -238,21 +239,19 @@ def randomize_writepaths(fns, lbs, key, dest_path):
     return fns, lbs
 
 def main():
-
-    # Check if main path to images exists
-    if not os.path.exists(spcinsitu_root+'/all_insitu_images'):
+    if not os.path.exists(spcombo_root+'/combo_images_exp'):
         raise ValueError ('Image dir not found')
 
     # Datasets to be created based off each sub-partition list
     # ['XX','YY'] -> Bench Partition, Insitu Partition
     # including 'noise' in key name will exclude all bench non-copepod images
     datasets = {
-          "bench-noise100": [['100','001'],['100', '005'],['100', '010'],['100', '015'],['100', '020'], ['100', '040'],
-                             ['100', '050'], ['100', '060'], ['100', '080']],
-
-          "insitu-noise100":[['0.25', '100'], ['0.5', '100'], ['1.5', '100'], ['002', '100'], ['7.5', '100'],['12.5', '100'], ['14', '100'],
-                             ['001','100'],['005','100'],['010','100'],['015','100'],['020','100'],['040','100'],['050','100'],['060','100'],
-                             ['080','100']],
+          # "bench-noise100": [['100','001'],['100', '005'],['100', '010'],['100', '015'],['100', '020'], ['100', '040'],
+          #                    ['100', '050'], ['100', '060'], ['100', '080']],
+          #
+          # "insitu-noise100":[['0.25', '100'], ['0.5', '100'], ['1.5', '100'], ['002', '100'], ['7.5', '100'],['12.5', '100'], ['14', '100'],
+          #                    ['001','100'],['005','100'],['010','100'],['015','100'],['020','100'],['040','100'],['050','100'],['060','100'],
+          #                    ['080','100']],
 
           "all-noise100": [['100', '100']]
     }
@@ -266,7 +265,11 @@ def main():
             print subset_name
 
             # Create dest path to output dataset txt and LMDB files
-            dest_path = os.path.join(os.getcwd(),dataset[0],subset_name,'code') # creates folders in current dir of create_LMDB script
+            spcombo = spcombo_root + '/combo_finetune'
+            dest_path = os.path.join(spcombo,dataset[0],subset_name,'code') # creates folders in current dir of create_LMDB script
+            if not os.path.exists(dest_path):
+                assert "Check Path"
+
 
             # Copy python scripts to each dataset from github repository
             if not os.path.exists(dest_path):
