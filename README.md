@@ -17,3 +17,14 @@ Below is a report of all my experiments and their results to better explain my r
 
 # Python scripts
 The eval.py and train_alexnet.py script are definitive python scripts that are robust enough to use for all of the source domain experiments, as well as evaluating the target domain. More information regarding how to navigate through these scripts will come!
+
+# For More Information:
+Feel free to contact me if you'd like to hear about my research. My contact information, as well as my resume and LinkedIn, can be found below
+
+Kevin Le
+
+kevin.le@gmail.com
+
+LinkedIn: https://www.linkedin.com/in/ktl014/
+
+Resume: https://docs.google.com/document/d/e/2PACX-1vSVOGU_fSBwC_LA0aIk_hu0jSubA6_y1tN6tKqEoI8LLcq4JIQEPSOwO-jur-6zsoph5L27kCZr0hQ5/pub
