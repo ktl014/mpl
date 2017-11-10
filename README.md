@@ -23,6 +23,5 @@ Feel free to contact me if you'd like to hear about my research. My contact info
 
 Kevin Le
 
-kevin.le@gmail.com | <a href="https://www.linkedin.com/in/ktl014/" title="LinkedIn" target="_blank">LinkedIn</a>
+kevin.le@gmail.com | <a href="https://www.linkedin.com/in/ktl014/" title="LinkedIn" target="_blank">LinkedIn</a> | <a href="https://docs.google.com/document/d/e/2PACX-1vSVOGU_fSBwC_LA0aIk_hu0jSubA6_y1tN6tKqEoI8LLcq4JIQEPSOwO-jur-6zsoph5L27kCZr0hQ5/pub" title="Resume" target="_blank">Resume</a>
 
-Resume: https://docs.google.com/document/d/e/2PACX-1vSVOGU_fSBwC_LA0aIk_hu0jSubA6_y1tN6tKqEoI8LLcq4JIQEPSOwO-jur-6zsoph5L27kCZr0hQ5/pub
