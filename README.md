@@ -19,6 +19,9 @@ Below is a report of all my experiments and their results to better explain my r
 The eval.py and train_alexnet.py script are definitive python scripts that are robust enough to use for all of the source domain experiments, as well as evaluating the target domain. More information regarding how to navigate through these scripts will come!
 
 # For More Information:
+Keep a look out for the publication release for this research at the 2018 Ocean Sciences Meeting from February 11-16th
+https://agu.confex.com/agu/os18/preliminaryview.cgi/Paper324027.html
+
 Feel free to contact me if you'd like to hear about my research. My contact information, as well as my resume and LinkedIn, can be found below
 
 Kevin Le
