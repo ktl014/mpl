@@ -1,5 +1,7 @@
 # Marine Physical Laboratory Summer 2017 Internship
-Welcome! This is my summer internship work page during my time at the Marine Physical Laboratory at the Scripps Insitution of Oceanography under Doctor Jules Jaffe and his PhD students. My research is primarily focused on applying computer vision and machine learning to efficiently analyze the big data that is provided through their in situ optical underwater imaging systems.
+Welcome! This is my summer internship work page during my time at the Marine Physical Laboratory at the Scripps Insitution of Oceanography under Doctor <a href="http://jaffeweb.ucsd.edu/research-projects/scripps-plankton-camera-system/automated-classification/" title="Jules Jaffe" target="_blank">Jules Jaffe</a>  and his PhD students. My research is primarily focused on applying computer vision and machine learning techniques to efficiently analyze the big data that is provided through their in situ optical underwater imaging systems.
+
+Click <a href="https://agu.confex.com/agu/os18/meetingapp.cgi/Paper/324027" title="here" target="_blank">here</a>  to view my latest work
 
 # Overview
 We have chosen to experiment with three source domains to test our hypothesis on utilizing a different source domain to boost classification performance and reduce the amount of effort to train the classifiers. Below are our source domains:
