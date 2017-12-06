@@ -3,6 +3,8 @@ matplotlib.use('Agg')
 # Load scikit's random forest classifier library
 from sklearn.ensemble import RandomForestClassifier
 from sklearn import cross_validation
+from sklearn.model_selection import KFold, cross_val_score
+from sklearn.grid_search import GridSearchCV
 # Load pandas
 import pandas as pd
 
@@ -36,7 +38,7 @@ import timeit
 # Joblib save image feature matrix for training and testing sets
 def main():
     t1 = timeit.default_timer()
-    EXP_NUM = 'exp2'
+    EXP_NUM = 'exp3'
     idx = 1
     DOMAIN = ['spcbench',
               'spcinsitu',
@@ -66,50 +68,59 @@ def main():
     print 'Examples per class: '
     print np.asarray((unique, counts))
 
-    alpha_estimator = [10, 100, 250, 500, 1000, 2000, 5000, 7500]
-    alpha_depth = [2, 5, 10, 20, 50, 70]
+    # Range of values to explore
+    alpha_estimator = filter(lambda x: x%100 == 0, list(range(100,700)))
+    alpha_depth = filter (lambda x: x % 10 == 0, list (range (5, 60)))
     alpha_minsample = [2, 5, 10, 20, 50, 70]
-    alpha_kfolds = [5, 10, 15, 20, 50, 70]
-    jobs = [2, 5, 7, 10, 15, 20]
-    normError = []
-    clf = RandomForestClassifier (n_estimators=alpha_estimator[3], max_depth=alpha_depth[3], min_samples_split=alpha_minsample[4], n_jobs=jobs[0], random_state=1)
+    # alpha_kfolds = [5, 10, 15, 20, 50, 70]
+    # jobs = [2, 5, 7, 10, 15, 20]
+
+    clf_1 = RandomForestClassifier (n_estimators=400, max_features = 'sqrt', n_jobs=-1, oob_score = True)
+    # determineOptimal(clf_1, trainFeatures, train['lbls'], alpha_minsample, 'minNSamples')
+    # paramGridSearch(trainFeatures, train['lbls'])
+
+    clf = RandomForestClassifier (n_estimators=400, max_depth=10, n_jobs=-1, max_features = 'sqrt')
+    # Train the Classifier to take the training features and learn how they relate to the training y (the species)
+    clf.fit (trainFeatures, train['lbls'])
+
+    # Apply the Classifier we trained to the test data (which, remember, it has never seen before)
+    preds = clf.predict (testFeatures)
+    dest_path = '/data4/plankton_wi17/mpl/target_domain/{}/{}'.format(DOMAIN[idx], CLASSIFIER_NAME) + '/{}'.format(EXP_NUM)
+    if not os.path.exists(dest_path):
+        os.makedirs(dest_path)
+    num_classes = 2
+    err = evaluatePredictions(preds, test['lbls'], num_classes, dest_path, CLASSIFIER_NAME, EXP_NUM)
+
+def paramGridSearch(train_x, train_y):
+    clf = RandomForestClassifier (max_features = 'sqrt', n_jobs=-1, oob_score = True)
+    param_grid = {
+        "n_estimators": [10, 100, 250, 500, 600],
+        "max_depth": [5, 10, 15, 20, 25, 30],
+        "min_samples_leaf": [2, 4, 6, 8, 10]}
+    CV_rfc = GridSearchCV(estimator=clf, param_grid=param_grid, cv=10)
+    CV_rfc.fit(train_x, train_y)
+    print CV_rfc.best_params_
+
+def determineOptimal(rfc, train_x, train_y, hyperparams, xlabel):
+    t1 = timeit.default_timer()
     results = []
-    for i in range(len(alpha_kfolds)):
-        # Simple K-Fold cross validation
-        cv = cross_validation.KFold(len(trainFeatures), n_folds=alpha_kfolds[i])
-        dest_path = '/data4/plankton_wi17/mpl/target_domain/{}/{}'.format(DOMAIN[idx], CLASSIFIER_NAME) + '/{}'.format(EXP_NUM)
-        if not os.path.exists(dest_path):
-            os.makedirs(dest_path)
-        num_classes = 2
-        for traincv, testcv in cv:
-            clf.fit(trainFeatures[traincv], train['lbls'][traincv])
-            preds = clf.predict(testFeatures[testcv])
-            err = evaluatePredictions (preds, test['lbls'][testcv], num_classes, dest_path, CLASSIFIER_NAME, EXP_NUM)
-            normError.append(err)
-        results.append(np.array(normError).mean())
-        print "results: " + str(np.array(normError).mean())
-    plt.figure()
-    plt.plot(alpha_kfolds, results, 'b-'); plt.title('Probability of Error vs Number of KFolds'); plt.xlabel('Number of KFolds'); plt.ylabel('Probability of Error')
-    plt.savefig('POE_kfolds.png')
-    # for i in range(len(alpha_estimator)):
-    #     clf = RandomForestClassifier (n_estimators=alpha_estimator[i], max_depth=alpha_depth[3], min_samples_split=alpha_minsample[4], n_jobs=jobs[0], random_state=1)
-    #     # Train the Classifier to take the training features and learn how they relate to the training y (the species)
-    #     clf.fit (trainFeatures, train['lbls'])
-    #
-    #     # Apply the Classifier we trained to the test data (which, remember, it has never seen before)
-    #     preds = clf.predict (testFeatures)
-    #     dest_path = '/data4/plankton_wi17/mpl/target_domain/{}/{}'.format(DOMAIN[idx], CLASSIFIER_NAME) + '/{}/{}'.format(EXP_NUM, EXP_NUM + '_%02d'%i)
-    #     if not os.path.exists(dest_path):
-    #         os.makedirs(dest_path)
-    #     num_classes = 2
-    #     err = evaluatePredictions(preds, test['lbls'], num_classes, dest_path, CLASSIFIER_NAME, EXP_NUM)
-    #     normError.append(err)
-    # plt.figure()
-    # alpha = 'Estimator'
-    # plt.plot(alpha_estimator, normError, 'b-'); plt.title('Probability of Error vs Number of {}'.format(alpha)); plt.xlabel('Number of {}'.format(alpha)); plt.ylabel('Probability of Error')
-    # plt.savefig('PoE_{}.png'.format(alpha))
+    seed = 123
+    print "Determining optimal value for {}".format(xlabel)
+    for i in hyperparams:
+        rfc.set_params(min_samples_split=i)
+        kfold = KFold(n_splits=10, random_state=seed)
+        scores = cross_val_score(rfc, train_x, train_y, cv=kfold, scoring='accuracy')
+        results.append(scores.mean()*100)
+        t2 = timeit.default_timer ()
+        print "Time: {}".format ( t2 - t1)
 
-
+    optimal_n = hyperparams[results.index(max(results))]
+    print "The optimal number of estimators is %d with %0.1f%%" % (optimal_n, max(results))
+    plt.plot(hyperparams, results)
+    plt.xlabel(xlabel)
+    plt.ylabel('Train Accuracy')
+    plt.title('Accuracy vs {}'.format(xlabel))
+    plt.savefig('PoE_{}.png'.format(xlabel))
 
 def evaluatePredictions(preds, gtruth, num_class, dest_path, CLASSIFIER_NAME, EXP_NUM):
     totalAccu = (preds == gtruth).mean()*100
