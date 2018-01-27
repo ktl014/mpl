@@ -1,0 +1,21 @@
+Binary Classifier: bench_ensemble-exp3
+Total Accuracy:
+67.5477239354
+Error Rate:
+32.4522760646
+Normalized Accuracy:
+56.6664
+Normalized Error Rate:
+43.3336
+Precision Rate:
+98.1366459627
+Recall Rate:
+13.4858313418
+Confusion Matrix (Raw Count):
+"                   Predicted Copepods  Predicted Non-Copepods
+True Copepods                    1580                   10136
+True Non-Copepods                  30                   19580"
+Confusion Matrix (Rate):
+"                   Predicted Copepods  Predicted Non-Copepods
+True Copepods                 13.4858                 86.5142
+True Non-Copepods              0.1530                 99.8470"
