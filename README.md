@@ -12,10 +12,12 @@ We have chosen to experiment with three source domains to test our hypothesis on
 
 We will evaluate these three source domains' experiments by testing them on our target domain dataset, which will ultimately provide us an accurate representation of how these classifiers fare in a realistic deployment environment.
 
-# Project Report
-Below is a report of all my experiments and their results to better explain my research.
+# Project Presentation & Report
+Below is a presentation & report of all my experiments and their results to better explain my research.
 
-<a href="//www.slideshare.net/secret/rzG5BiAbYDVLl" title="Mpl summer 2017 project report" target="_blank">Mpl summer 2017 project report</a> 
+<a href="https://drive.google.com/open?id=1zpgmAP7Rwkx7XLakshjhu5KaIi7n93GAw6CMdR_LlmY" title="Mpl summer 2017 project presentation" target="_blank">Mpl summer 2017 presentation</a> 
+
+<a href="https://drive.google.com/open?id=1bVy-m0P-tk0kNSeu80Bh-uai2X9-ADVZ" title="Mpl summer 2017 project report" target="_blank">Mpl summer 2017 project report</a> 
 
 # Python scripts
 The eval.py and train_alexnet.py script are definitive python scripts that are robust enough to use for all of the source domain experiments, as well as evaluating the target domain. More information regarding how to navigate through these scripts will come!
