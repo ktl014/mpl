@@ -38,50 +38,42 @@ import timeit
 # Joblib save image feature matrix for training and testing sets
 def main():
     t1 = timeit.default_timer()
-    EXP_NUM = 'exp3'
-    idx = 1
+    EXP_NUM = 'exp4'
+    idx = 2
     DOMAIN = ['spcbench',
               'spcinsitu',
               'spcombo']
     CLASSIFIER_NAME = '{}_ensemble'.format(DOMAIN[idx].strip('spc'))
-    SRCPATH = ['/data4/plankton_wi17/mpl/source_domain/spcombo/combo_images_exp',
+    SRCPATH = ['/data4/plankton_wi17/mpl/source_domain/spcbench/bench_finetune/code',
                '/data4/plankton_wi17/mpl/source_domain/spcinsitu/insitu_finetune/code',
                '/data4/plankton_wi17/mpl/source_domain/spcombo/combo_finetune/all-noise100/all-noise100_100-100/code']
-    train, test = train_testSplit(DOMAIN[idx], SRCPATH[idx])
 
-    featurename = '{}tFeatures'.format (DOMAIN[idx])
-    featuresExtracted = True
-    if not featuresExtracted:
-        # Extract features for training and testing set
-        trainFeatures = extractFeature(train['imgs'])
-        joblib.dump(trainFeatures, featurename)
-        t2 = timeit.default_timer()
-        print "{} finished extracting after {}".format(featurename, t2-t1)
-        testFeatures = extractFeature(test['imgs'])
-    else:
-        trainFeatures = joblib.load (featurename)
-        testFeatures = joblib.load('targetsetFeatures')
+    train, val, test = train_testSplit(DOMAIN[idx], SRCPATH[idx])
 
-    print 'Number of training examples: {}'.format(len(trainFeatures))
-    print 'Number of test examples: {}'.format(len(testFeatures))
-    unique, counts = np.unique(train['lbls'], return_counts=True)
-    print 'Examples per class: '
-    print np.asarray((unique, counts))
+    trainFeatures = extractFeature(train['imgs'], '{}_trainFeatures'.format(DOMAIN[idx]))
+    valFeatures = extractFeature (val['imgs'], '{}_valFeatures'.format (DOMAIN[idx]))
+    testFeatures = extractFeature(test['imgs'], 'targetFeatures')
 
-    # Range of values to explore
-    alpha_estimator = filter(lambda x: x%100 == 0, list(range(100,700)))
-    alpha_depth = filter (lambda x: x % 10 == 0, list (range (5, 60)))
-    alpha_minsample = [2, 5, 10, 20, 50, 70]
-    # alpha_kfolds = [5, 10, 15, 20, 50, 70]
-    # jobs = [2, 5, 7, 10, 15, 20]
+    datasets = {'train': train, 'val': val, 'test': test}
+    for key, i in datasets.iteritems ():
+        print key
+        unique, counts = np.unique (i['lbls'], return_counts=True)
+        print(np.asarray (zip (unique, counts)))
 
-    clf_1 = RandomForestClassifier (n_estimators=400, max_features = 'sqrt', n_jobs=-1, oob_score = True)
-    # determineOptimal(clf_1, trainFeatures, train['lbls'], alpha_minsample, 'minNSamples')
-    # paramGridSearch(trainFeatures, train['lbls'])
+    crossVal = True
+    if crossVal:
+        determineOptimal(trainFeatures, train['lbls'], valFeatures, val['lbls'])
+        paramGridSearch (trainFeatures, train['lbls'])
+        exit(0)
 
-    clf = RandomForestClassifier (n_estimators=400, max_depth=10, n_jobs=-1, max_features = 'sqrt')
+    clf = RandomForestClassifier (n_estimators=400, max_depth=450, n_jobs=2, min_samples_split=45, 
+        max_features = 'sqrt', oob_score = True)                # BenchModelparam
+    clf1 = RandomForestClassifier (n_estimators=200, max_depth=10, min_samples_split=10, 
+        max_features='sqrt', random_state=seed, n_jobs=-1)      # InsituModelparam
+
+
     # Train the Classifier to take the training features and learn how they relate to the training y (the species)
-    clf.fit (trainFeatures, train['lbls'])
+    clf1.fit (trainFeatures, train['lbls'])
 
     # Apply the Classifier we trained to the test data (which, remember, it has never seen before)
     preds = clf.predict (testFeatures)
@@ -91,35 +83,71 @@ def main():
     num_classes = 2
     err = evaluatePredictions(preds, test['lbls'], num_classes, dest_path, CLASSIFIER_NAME, EXP_NUM)
 
+    # Plot Feature Importance
+    test = clf.feature_importances_
+    features = range(72)
+    test, features = zip(*sorted(zip(test, features)))
+    plt.figure()
+    plt.barh(range(len(features[:10])), test[:10], align = 'center')
+    plt.yticks(range(len(features[:10])), features[:10])
+    plt.savefig('FeatureImportance.png')
+
+    # Save model for future use
+    filename = 'combo_rfModelExp4.sav'
+    saveModel(clf1, filename, testFeatures, test['lbls'])
+
+def saveModel(model, filename, test_x, test_y):
+    pickle.dump(model, open(filename, "wb"))
+    loaded_model = pickle.load(filename)
+    result = loaded_model.score(test_x, test_y)
+    if result != 0:
+        print('{} successfully saved and tested for loading, results: {}'.format(filename, result))
+
 def paramGridSearch(train_x, train_y):
-    clf = RandomForestClassifier (max_features = 'sqrt', n_jobs=-1, oob_score = True)
+    clf = RandomForestClassifier (n_jobs=-1, random_state=0)
     param_grid = {
-        "n_estimators": [10, 100, 250, 500, 600],
-        "max_depth": [5, 10, 15, 20, 25, 30],
-        "min_samples_leaf": [2, 4, 6, 8, 10]}
-    CV_rfc = GridSearchCV(estimator=clf, param_grid=param_grid, cv=10)
+        "n_estimators": list(range(1,601,100)),
+        "max_depth": [None] + list(range(5,25,1)),
+        #"max_features":list(range(1,train_x.shape[1],2)),
+        "min_samples_split": [2, 5, 10, 20, 50, 70]}
+    CV_rfc = GridSearchCV(estimator=clf, param_grid=param_grid, cv=10, verbose=1, n_jobs=-1)
     CV_rfc.fit(train_x, train_y)
     print CV_rfc.best_params_
+    print CV_rfc.best_score_
 
-def determineOptimal(rfc, train_x, train_y, hyperparams, xlabel):
+def determineOptimal(train_x, train_y, test_x, test_y):
+    alpha_estimator = filter(lambda x: x%100 == 0, list(range(100,700)))
+    alpha_depth = filter (lambda x: x % 50 == 0, list (range (50, 500)))
+    alpha_minsample = filter (lambda x: x % 5 == 0, list (range (5, 100)))
+
+    xlabel = 'maxDepth'; hyperparams = alpha_depth;
     t1 = timeit.default_timer()
-    results = []
+    train_results = []
+    test_results = []
     seed = 123
+    rfc = RandomForestClassifier (n_estimators=600, n_jobs=-1, random_state=seed)
     print "Determining optimal value for {}".format(xlabel)
     for i in hyperparams:
-        rfc.set_params(min_samples_split=i)
-        kfold = KFold(n_splits=10, random_state=seed)
-        scores = cross_val_score(rfc, train_x, train_y, cv=kfold, scoring='accuracy')
-        results.append(scores.mean()*100)
-        t2 = timeit.default_timer ()
-        print "Time: {}".format ( t2 - t1)
+        rfc.set_params(max_depth=i)
+        scores = cross_val_score(rfc, train_x, train_y, cv=10, scoring='accuracy', n_jobs=-1, verbose=1)
+        train_results.append(scores.mean()*100)
 
-    optimal_n = hyperparams[results.index(max(results))]
-    print "The optimal number of estimators is %d with %0.1f%%" % (optimal_n, max(results))
-    plt.plot(hyperparams, results)
+        rfc.fit(train_x, train_y)
+        test_results.append(rfc.score(test_x,test_y).mean()*100)
+        t2 = timeit.default_timer ()
+        print "Time: {}, Iteration: {}, Value: {}".format (t2 - t1, hyperparams.index(i), i)
+
+    optimal_trainn = hyperparams[train_results.index(max(train_results))]
+    optimal_testn = hyperparams[test_results.index(max(test_results))]
+    print "The optimal number for training is %d with %0.1f%%" %(optimal_trainn,max(train_results))
+    print "The optimal number for validation is %d with %0.1f%%" %(optimal_testn,max(test_results))
+
+    plt.plot(hyperparams, train_results, hyperparams, test_results)
     plt.xlabel(xlabel)
-    plt.ylabel('Train Accuracy')
+    plt.ylabel('Accuracy')
     plt.title('Accuracy vs {}'.format(xlabel))
+    plt.gcf().text(0.05, 0.15, "The optimal number for training is {} with {}%%".format(optimal_trainn,max(train_results)), fontsize=10)
+    plt.gcf().text(0.05, 0.10, "The optimal number for validation is {} with {}%%".format(optimal_testn,max(test_results)), fontsize=10)
     plt.savefig('PoE_{}.png'.format(xlabel))
 
 def evaluatePredictions(preds, gtruth, num_class, dest_path, CLASSIFIER_NAME, EXP_NUM):
@@ -156,11 +184,11 @@ def evaluatePredictions(preds, gtruth, num_class, dest_path, CLASSIFIER_NAME, EX
 
     # Calculate Precision Rate
     precision = (confusion_matrix_rawcount[0,0]/(confusion_matrix_rawcount[0,0]+confusion_matrix_rawcount[1,0]))*100 # TP / (FP+TP)
-    # print("Precision: {}".format(precision))
+    print("Precision: {}".format(precision))
 
     # Calculate Recall Rate
     recall = (confusion_matrix_rawcount[0,0]/(confusion_matrix_rawcount[0,0]+confusion_matrix_rawcount[0,1]))*100 # TP / (FN+TP)
-    # print("Recall: {}".format(recall))
+    print("Recall: {}".format(recall))
 
     results_filename = os.path.join (dest_path, CLASSIFIER_NAME + '-' + EXP_NUM + '_Results.csv')
     outfile = open (results_filename, 'wb')
@@ -203,41 +231,49 @@ def train_testSplit(domain, srcPath):
     print domain + ' selected'
     if domain == 'spcbench':
         destPath = '/data4/plankton_wi17/mpl/source_domain/spcbench/bench_ensemble'
-        srcpath = srcPath + '/{}'.format(domain)
-        classList = glob.glob(srcpath + '/*')
-        with open("{}_stats.txt".format(domain), "w") as f:
-            for cl in classList:
-                imgList = glob.glob(cl + '/*')
-                cl_lbl = int(os.path.basename(cl).replace('class', ''))
-                lblList = [cl_lbl]*len(imgList)
-
-                # Shuffle retrieved image list before partitioning into train and test sets
-                totalImgs = len(imgList)
-                image_index = range (totalImgs)
-                random.shuffle (image_index)
-                imgList = [imgList[i] for i in image_index]
-                f.write( 'class ' + str(cl_lbl) + ' ' + str(totalImgs) + '\n')
-                trainSize = int(totalImgs * trainPartition)
-                f.write('\t train: {} \n'.format(trainSize))
-                train_fns += imgList[:int(totalImgs * trainPartition)]; train_lbls += [cl_lbl]*trainSize
-        f.close()
+        # srcpath = srcPath + '/{}'.format(domain)
+        # classList = glob.glob(srcpath + '/*')
+        # with open("{}_stats.txt".format(domain), "w") as f:
+        #     for cl in classList:
+        #         imgList = glob.glob(cl + '/*')
+        #         cl_lbl = int(os.path.basename(cl).replace('class', ''))
+        #         lblList = [cl_lbl]*len(imgList)
+        #
+        #         # Shuffle retrieved image list before partitioning into train and test sets
+        #         totalImgs = len(imgList)
+        #         image_index = range (totalImgs)
+        #         random.shuffle (image_index)
+        #         imgList = [imgList[i] for i in image_index]
+        #         f.write( 'class ' + str(cl_lbl) + ' ' + str(totalImgs) + '\n')
+        #         trainSize = int(totalImgs * trainPartition)
+        #         f.write('\t train: {} \n'.format(trainSize))
+        #         train_fns += imgList[:int(totalImgs * trainPartition)]; train_lbls += [cl_lbl]*trainSize
+        # f.close()
+        train_fns, train_lbls = getFnsAndLbls(srcPath + '/train.txt', Target=False)
+        val_fns, val_lbls = getFnsAndLbls(srcPath + '/test.txt', Target=False)
     elif domain == 'spcinsitu':
         destPath = '/data4/plankton_wi17/mpl/source_domain/spcinsitu/insitu_ensemble'
         train_fns, train_lbls = getFnsAndLbls(srcPath + '/train.txt', Target=False)
+        val_fns, val_lbls = getFnsAndLbls(srcPath + '/test.txt', Target=False)
     elif domain == 'spcombo':
         destPath = '/data4/plankton_wi17/mpl/source_domain/spcombo/combo_ensemble'
         train_fns, train_lbls = getFnsAndLbls(srcPath + '/train.txt', Target=False)
+        val_fns, val_lbls = getFnsAndLbls (srcPath + '/val.txt', Target=False)
 
     testFile = '/data4/plankton_wi17/mpl/target_domain/aspect_target_image_path_labels.txt'
     test_fns, test_lbls = getFnsAndLbls(testFile, Target=True)
 
     train_fns, train_lbls = randomize_writepaths(train_fns, train_lbls, 'train', destPath)
+    val_fns, val_lbls = randomize_writepaths (val_fns, val_lbls, 'val', destPath)
     test_fns, test_lbls = randomize_writepaths(test_fns, test_lbls, 'test', destPath)
     train = {'imgs': train_fns, 'lbls': train_lbls}
+    val = {'imgs': val_fns, 'lbls': val_lbls}
     test = {'imgs': test_fns, 'lbls': test_lbls}
-    return train, test
+    return train, val, test
 
 def getFnsAndLbls(textFile, Target=True):
+    if not os.path.exists(textFile):
+        print "File does not exist"
     try:
         if Target:
             df = pd.read_csv(textFile, delimiter=';', names=['img','id', 'lbl'])
@@ -272,15 +308,22 @@ def randomize_writepaths(fns, lbs, key, dest_path):
     f.close ()
     return fns, lbs
 
-def extractFeature(imgList):
-    numFeatures = 72
-    featureVector = np.zeros([len(imgList), numFeatures])
-    for i, imgname in enumerate(imgList):
-        img = caffe.io.load_image (imgname)
-        img = (img * 255).astype (np.uint8)
-        featureVector[i,:] = extractFeatures(img)
-        if i%100 == 0:
-            print i,'/',len(imgList)
+def extractFeature(imgList, featureName):
+    if not os.path.exists(featureName):
+        print "Extracting Features for {} \n".format(featureName)
+        numFeatures = 72
+        featureVector = np.zeros([len(imgList), numFeatures])
+        for i, imgname in enumerate(imgList):
+            img = caffe.io.load_image (imgname)
+            img = caffe.io.resize_image(img, [256,256])
+            img = (img * 255).astype (np.uint8)
+            featureVector[i,:] = extractFeatures(img)
+            if i%100 == 0:
+                print i,'/',len(imgList)
+        joblib.dump(featureVector, featureName)
+    else:
+        featureVector = joblib.load(featureName)
+    print featureName + ' loaded \n'
     return featureVector
 
 def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix', cmap=plt.cm.Blues):
@@ -313,7 +356,7 @@ def datasetFeatureExtract():
     bench_srcpath = '/data4/plankton_wi17/mpl/source_domain/spcombo/combo_images_exp'  # Image dir for bench and insitu images
     train, test = train_testSplit('spcbench', bench_srcpath)
     testFeatures = extractFeature(test['imgs'])
-    joblib.dump(testFeatures, 'benchsetFeatures')
+    joblib.dump(testFeatures, 'targetsetFeatures')
 
 def loadFeatures(filename):
     feature = joblib.load(filename)
@@ -321,13 +364,13 @@ def loadFeatures(filename):
     print feature.shape
 
 if __name__ == '__main__':
-    # main()
     main()
 
     # testsetFn = '/data4/plankton_wi17/mpl/source_domain/ensembleClassifier/targetsetFeatures'
     # loadFeatures(testsetFn)
     # train_testSplit(domain="spcbench")
-    # getFnsAndLbls()
+
+
 
 
 
