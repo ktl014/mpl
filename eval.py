@@ -26,7 +26,9 @@ if SRC_DOMAIN == 'spcombo':                         # Changes file paths for SPC
     dataset = 'insitu-noise100'
     datasetDegree = dataset + '_100-15'
     OUTROOT = os.path.join(OUTROOT, dataset, datasetDegree)
-
+elif CLASSIFIER_NAME == 'insitu_split':
+    datasetDegree = 'insitu-05'
+    OUTROOT = os.path.join(OUTROOT,datasetDegree)
 
 def main(test_data, num_class):
     t1 = timeit.default_timer()  # Start timer

@@ -6,14 +6,16 @@ import sys
 import argparse
 import caffe
 import timeit
+import shutil
+EXP_NUM = 'exp3'
 
-# Specify which exp_num to use. A new solver.prototxt must be made to match with desired exp_num
-EXP_NUM = 'exp2'
-
-def main():
-    solver_fn = 'caffenet/solver_' + EXP_NUM + '.prototxt'
+def train(srcPath):
+    solver_fn = srcPath + '/caffenet/solver_' + EXP_NUM + '.prototxt'
     if not os.path.exists(solver_fn):
-        raise ValueError('Solver_fn not found or does not exist')
+        previousEXP = 'exp' + str(int(EXP_NUM[3:])-1)
+        if os.path.exists(srcPath + '/caffenet/solver_' + previousEXP + '.prototxt'):
+            print('copied new solver file for ' + EXP_NUM)
+            shutil.copy(srcPath + '/caffenet/solver_' + previousEXP + '.prototxt', solver_fn)
 
     # Set which GPU to use
     gpu_id = 1
@@ -22,9 +24,9 @@ def main():
     caffe.set_mode_gpu()
 
     # Set # of test iterations
-    test_iters = 3001
+    test_iters = 1501
 
-    model_pretrained = 'caffenet/bvlc_reference_caffenet.caffemodel'
+    model_pretrained = srcPath + '/caffenet/bvlc_reference_caffenet.caffemodel'
 
     # Load solver (Default is the SGD solver)
     solver = caffe.SGDSolver(solver_fn)     # Prep solver
@@ -46,9 +48,28 @@ def main():
         # (forward propagation, backward propagation, and update of net params given gradients)
         solver.step(1)
 
-    solver.net.save('model_' + EXP_NUM + '.caffemodel')
+    solver.net.save(srcPath + '/model_' + EXP_NUM + '.caffemodel')
 
     t2 = timeit.default_timer() # End timer
     print("Training Time: {}".format(t2-t1))
+
+def trainmultiple_Models():
+    mainSRC = '/data4/plankton_wi17/mpl/source_domain/spcombo/combo_finetune/bench-noise100'
+    datasets = {
+        "bench-noise100": [ ['100', '10'], ['100', '15'], ['100', '20'], ['100', '40'],
+                           ['100', '50'], ['100', '60'], ['100', '80']], } # ['100', '01'], ['100', '05'],
+    for dataset in datasets.iteritems():
+        for subset in dataset[1]:
+            subsetName = dataset[0] + "_{}-{}".format (int (subset[0]),
+                                                    str (subset[1]))  # For instance -> bench-noise100_XX-YY
+            srcPath = os.path.join(mainSRC, subsetName, 'code')
+            print =('training ' + subsetName)
+            train(srcPath)
+
+    # Select which folder to train
+
+    # Navigate to each folder's solver fn
 if __name__ == '__main__':
-    main()
+    srcPath = os.getcwd()
+    train(srcPath)
+    trainmultiple_Models()

@@ -1,0 +1,21 @@
+Binary Classifier: insitu_ensemble-exp3
+Total Accuracy:
+71.9424460432
+Error Rate:
+28.0575539568
+Normalized Accuracy:
+65.76245
+Normalized Error Rate:
+34.23755
+Precision Rate:
+98.8679245283
+Recall Rate:
+31.7768344451
+Confusion Matrix (Raw Count):
+"                   Predicted Copepods  Predicted Non-Copepods
+True Copepods                     524                    1125
+True Non-Copepods                   6                    2376"
+Confusion Matrix (Rate):
+"                   Predicted Copepods  Predicted Non-Copepods
+True Copepods                 31.7768                 68.2232
+True Non-Copepods              0.2519                 99.7481"
