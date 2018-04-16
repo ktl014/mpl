@@ -15,6 +15,8 @@ import cv2
 
 DEBUG = False
 spcombo_root = '/data4/plankton_wi17/mpl/source_domain/spcombo'
+DATASETVERSION = 'V1b'
+
 def write_caffe_lmdb(img_fns, labels, lmdb_fn):
     '''
     Writes LMDB file from image files and labels
@@ -147,12 +149,10 @@ def get_fns(key, stats_f, partition, dataset):
         if key == i:
             key_partition = key_partition_dict[i]
 
-    #TODO change root to /combo_images_exp/V1b/spcbench...spcinsitu...etc
     # Initialize paths to each source domain
     source_domains = ['spcbench','spcinsitu']
-    img_root = spcombo_root + '/combo_images_exp'
+    img_root = spcombo_root + '/combo_images_exp/{}/'.format(DATASETVERSION)
     source_domains = [os.path.join(img_root,domain) for domain in source_domains] # Join path with source domain
-
 
     for sourceDomain_path in source_domains:
         domain_name = os.path.basename(sourceDomain_path)
@@ -169,10 +169,8 @@ def get_fns(key, stats_f, partition, dataset):
         # Hierarchy to retrieve images
         # source domain --> classes --> images
         class_list = glob.glob(os.path.join(sourceDomain_path, "*"))            # Grab list of classes
-        #TODO read from text file all of the images: class_list = getImageFiles
 
         for class_i in class_list:
-            #TODO class_label = get_class_label()
             class_label = int(os.path.basename(class_i).replace("class",""))    # Grab label from path
 
             # Excludes bench non-copepod images and uses all Insitu non-copepod images
@@ -181,7 +179,12 @@ def get_fns(key, stats_f, partition, dataset):
                     percentage = 100
                 elif domain_name == "spcbench" and class_label == 1:
                     percentage = 0
-            img_list = glob.glob(os.path.join(class_i, "*"))                    # Grab list of image files in class dir
+
+            # Grab list of images based on dataset version
+            if DATASETVERSION == 'V1b':
+                img_list = open(class_i+'/data{}.txt'.format(class_label)).read().splitlines()
+            else:
+                img_list = glob.glob(os.path.join(class_i, "*"))
 
             # Shuffle retrieved image list before partitioning into train, val, and test sets
             if DEBUG:
@@ -192,7 +195,7 @@ def get_fns(key, stats_f, partition, dataset):
             if DEBUG:
                 print 'train image 0 after shuffling: ', img_list[0]
 
-            # Partition dataset based on source domain and key
+            # Partition dataset based on source domain and key (i.e. domain=spcbench, key=train)
             total_num_img = int(len(img_list) * float(percentage) / 100) # Partition based off assigned partitions of source domain
             partitioned_img_list = img_list[0:total_num_img]             # List of images after partition
 
@@ -249,14 +252,14 @@ def main():
     # ['XX','YY'] -> Bench Partition, Insitu Partition
     # including 'noise' in key name will exclude all bench non-copepod images
     datasets = {
-          "bench-noise100": [['100','01'],['100', '05'],['100', '10'],['100', '15'],['100', '20'], ['100', '40'],
-                             ['100', '50'], ['100', '60'], ['100', '80']],
+          # "benchv1b-noise100": [['100','01'],['100', '05'],['100', '10'],['100', '15'],['100', '20'], ['100', '40'],
+          #                    ['100', '50'], ['100', '60'], ['100', '80']],
           #
-          # "insitu-noise100":[['0.25', '100'], ['0.5', '100'], ['1.5', '100'], ['002', '100'], ['7.5', '100'],['12.5', '100'], ['14', '100'],
+          # "insituv1b-noise100":[['0.25', '100'], ['0.5', '100'], ['1.5', '100'], ['002', '100'], ['7.5', '100'],['12.5', '100'], ['14', '100'],
           #                    ['001','100'],['005','100'],['010','100'],['015','100'],['020','100'],['040','100'],['050','100'],['060','100'],
           #                    ['080','100']],
 
-          # "all-noise100": [['100', '100']]
+          "allv1b-noise100": [['100', '100']]
     }
 
     # Iterate over each dataset key
@@ -273,12 +276,12 @@ def main():
             if not os.path.exists(dest_path):
                 assert "Check Path"
 
-            #TODO change github repo to '/data4/plankton_wi17/mpl/mpl_git, same for CaffeNet files
             # Copy python scripts to each dataset from github repository
             if not os.path.exists(dest_path):
                 os.makedirs(dest_path)
-                evalScript = '/data4/plankton_wi17/mpl/source_domain/spcombo/combo_finetune/insitu-noise100/mpl_git/eval.py'
-                trainScript = '/data4/plankton_wi17/mpl/source_domain/spcombo/combo_finetune/insitu-noise100/mpl_git/train_alexnet.py'
+                gitRoot = '/data4/plankton_wi17/mpl/mpl_git'
+                evalScript = gitRoot + '/eval.py'
+                trainScript = gitRoot +  '/train_alexnet.py'
                 shutil.copy(evalScript,dest_path+'/eval.py')
                 shutil.copy(trainScript,dest_path+'/train_alexnet.py')
                 print 'Copied eval and train script'
@@ -288,17 +291,19 @@ def main():
                 os.makedirs(os.path.join(os.getcwd(),dataset[0],subset_name,'exp1'))
 
             # Copy CaffeNet files to each dataset directory
-            caffe_fldr = '/data4/plankton_wi17/mpl/source_domain/spcombo/combo_finetune/insitu-noise100/insitu-noise100_100-01/code/caffenet'
+            caffe_fldr = '/data4/plankton_wi17/mpl/mpl_git/caffenet'
             if not os.path.exists(dest_path+'/caffenet'):
                 print 'Copying caffe files'
                 shutil.copytree(caffe_fldr,dest_path+'/caffenet')
 
+            existingLMDBVersion = 'V1a'
             for key in ['train', 'val', 'test1']:
                 lmdb_path = dest_path + '/{}.LMDB'.format(key)
                 if os.path.exists(lmdb_path):
-                    if not os.path.exists(dest_path + '/bgrLMDB'):
-                        os.makedirs(dest_path + '/bgrLMDB')
-                    shutil.move(lmdb_path, dest_path + '/bgrLMDB/{}.LMDB'.format(key))
+                    dest_lmdb_path = dest_path + '/{}LMDB'.format(existingLMDBVersion)
+                    if not os.path.exists(dest_lmdb_path):
+                        os.makedirs(dest_lmdb_path)
+                    shutil.move(lmdb_path, dest_lmdb_path + '/{}.LMDB'.format(key))
 
             # # Write stats for each dataset
             with open(dest_path + "/{}_stats.txt".format(subset_name), "w") as stats_f:
