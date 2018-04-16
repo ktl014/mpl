@@ -147,6 +147,7 @@ def get_fns(key, stats_f, partition, dataset):
         if key == i:
             key_partition = key_partition_dict[i]
 
+    #TODO change root to /combo_images_exp/V1b/spcbench...spcinsitu...etc
     # Initialize paths to each source domain
     source_domains = ['spcbench','spcinsitu']
     img_root = spcombo_root + '/combo_images_exp'
@@ -168,8 +169,10 @@ def get_fns(key, stats_f, partition, dataset):
         # Hierarchy to retrieve images
         # source domain --> classes --> images
         class_list = glob.glob(os.path.join(sourceDomain_path, "*"))            # Grab list of classes
+        #TODO read from text file all of the images: class_list = getImageFiles
 
         for class_i in class_list:
+            #TODO class_label = get_class_label()
             class_label = int(os.path.basename(class_i).replace("class",""))    # Grab label from path
 
             # Excludes bench non-copepod images and uses all Insitu non-copepod images
@@ -246,14 +249,14 @@ def main():
     # ['XX','YY'] -> Bench Partition, Insitu Partition
     # including 'noise' in key name will exclude all bench non-copepod images
     datasets = {
-          # "bench-noise100": [['100','001'],['100', '005'],['100', '010'],['100', '015'],['100', '020'], ['100', '040'],
-          #                    ['100', '050'], ['100', '060'], ['100', '080']],
+          "bench-noise100": [['100','01'],['100', '05'],['100', '10'],['100', '15'],['100', '20'], ['100', '40'],
+                             ['100', '50'], ['100', '60'], ['100', '80']],
           #
           # "insitu-noise100":[['0.25', '100'], ['0.5', '100'], ['1.5', '100'], ['002', '100'], ['7.5', '100'],['12.5', '100'], ['14', '100'],
           #                    ['001','100'],['005','100'],['010','100'],['015','100'],['020','100'],['040','100'],['050','100'],['060','100'],
           #                    ['080','100']],
 
-          "all-noise100": [['100', '100']]
+          # "all-noise100": [['100', '100']]
     }
 
     # Iterate over each dataset key
@@ -261,7 +264,7 @@ def main():
     for dataset in datasets.iteritems():
         for index,subset in enumerate(dataset[1]):  # Iterate over each partition list
             partition = subset                      # For instance -> ['020','100']
-            subset_name = dataset[0] + "_{}-{}".format(int(partition[1]),str(partition[0]))     # For instance -> bench-noise100_XX-YY
+            subset_name = dataset[0] + "_{}-{}".format(int(partition[0]),str(partition[1]))     # For instance -> bench-noise100_XX-YY
             print subset_name
 
             # Create dest path to output dataset txt and LMDB files
@@ -270,7 +273,7 @@ def main():
             if not os.path.exists(dest_path):
                 assert "Check Path"
 
-
+            #TODO change github repo to '/data4/plankton_wi17/mpl/mpl_git, same for CaffeNet files
             # Copy python scripts to each dataset from github repository
             if not os.path.exists(dest_path):
                 os.makedirs(dest_path)
@@ -289,6 +292,13 @@ def main():
             if not os.path.exists(dest_path+'/caffenet'):
                 print 'Copying caffe files'
                 shutil.copytree(caffe_fldr,dest_path+'/caffenet')
+
+            for key in ['train', 'val', 'test1']:
+                lmdb_path = dest_path + '/{}.LMDB'.format(key)
+                if os.path.exists(lmdb_path):
+                    if not os.path.exists(dest_path + '/bgrLMDB'):
+                        os.makedirs(dest_path + '/bgrLMDB')
+                    shutil.move(lmdb_path, dest_path + '/bgrLMDB/{}.LMDB'.format(key))
 
             # # Write stats for each dataset
             with open(dest_path + "/{}_stats.txt".format(subset_name), "w") as stats_f:
