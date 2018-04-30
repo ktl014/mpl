@@ -8,7 +8,7 @@ import pandas as pd
 import shutil
 DEBUG = False
 
-def create_dataset():
+def create_dataset(datasetVersion):
     '''
     Separate bench and insitu images to their respective classes to make dataset for combo experiments
     :return: 
@@ -25,14 +25,20 @@ def create_dataset():
             print("starting {}".format(key))
 
             # Initialize path to read text file from
-            dest_path = os.path.join (os.getcwd (), dataset)
+            src_path = os.path.join (os.getcwd (), dataset)
 
             # Read text file into dataframe to collect image paths and labels
-            df = pd.read_csv(dest_path + "/{}.txt".format(key), sep = " ", header=None)
-            df.columns = ['path','label']
+            if dataset == 'spcinsitu':
+                df = pd.read_csv(src_path + "/{}.txt".format(key), sep = " ", header=None)
+                df.columns = ['path','label']
+            elif dataset == 'spcbench':
+                img_dir = '/data5/Plankton_wi18/rawcolor_db2/images/'
+                df = pd.read_csv(src_path+ "/{}.csv".format(key))
+                df['path'] = img_dir + df['images']
+                df = df.drop('images', axis=1)
 
             # Initialize dir to copy images to
-            img_root = '/data4/plankton_wi17/mpl/source_domain/spcombo/combo_images_exp1'
+            img_root = '/data4/plankton_wi17/mpl/source_domain/spcombo/combo_images_exp/{}'.format(datasetVersion)
             num_class = 2
             for classes in range(num_class):
 
@@ -46,9 +52,12 @@ def create_dataset():
                    os.makedirs(dest_path)
 
                 # Copy all images in image list to desired dir
+                f = open(dest_path + '/data{}.txt'.format(classes), 'w')
                 for img in class_list:
-                    img_basename = os.path.basename(img)
+                    f.write(img + '\n')
+                    # img_basename = os.path.basename(img)
                     #shutil.copy(img,os.path.join(dest_path,img_basename)) # line to copy files
+                f.close()
 
 def separate_insitu_bench():
     img_root = '/data4/plankton_wi17/mpl/source_domain/spcombo/combo_images_exp'
@@ -91,5 +100,5 @@ def countimg():
     f.close()
 
 if __name__ == '__main__':
-    create_dataset()
+    create_dataset(datasetVersion='V1b')
 
