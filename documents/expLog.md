@@ -1,7 +1,7 @@
 # SPC Bench/Insitu Experiments Revisited
 
 Background: Spcbench 
-![baseline.png](/Users/ktl014/PycharmProjects/mpl/plots/baseline.png)
+![baseline.png](plots/baseline.png)
 
 Normalized Error Rate (average of true positives errors to counter class imbalance)
 
@@ -25,7 +25,7 @@ Normalized Error Rate (average of true positives errors to counter class imbalan
 
 | Calanoida        | Cyclopoida & Poecilomastoida          |
 | ------------- |:-------------:|
-| ![calanoida.png](/Users/ktl014/PycharmProjects/mpl/plots/calanoidaAdditions.png)     | ![cyclopoida.png](/Users/ktl014/PycharmProjects/mpl/plots/cyclopoidaAdditions.png)|
+| ![calanoida.png](plots/calanoidaAdditions.png)     | ![cyclopoida.png](plots/cyclopoidaAdditions.png)|
 *Red boxes indicate new specimens
 
 #### SPCInsitu Dataset Statistics
@@ -36,7 +36,7 @@ Normalized Error Rate (average of true positives errors to counter class imbalan
 
 | Copepod        | Non-Copepod           |
 | ------------- |:-------------:|
-| ![insituCopepod.png](/Users/ktl014/PycharmProjects/mpl/plots/insituCopepod.png)      | ![insituNonCopepod.png](/Users/ktl014/PycharmProjects/mpl/plots/insituNonCopepod.png) |
+| ![insituCopepod.png](plots/insituCopepod.png)      | ![insituNonCopepod.png](plots/insituNonCopepod.png) |
 
 #### Target Dataset Statistics
 The target dataset is also pulled from the same source of images as the SPCInsitu, hence the similarity in images.
@@ -48,7 +48,7 @@ Below is a visualization of the target dataset.
 
 | Copepod        | Non-Copepod           |
 | ------------- |:-------------:|
-| ![targetCopepod.png](/Users/ktl014/PycharmProjects/mpl/plots/targetCopepod.png)      | ![targetNonCopepod.png](/Users/ktl014/PycharmProjects/mpl/plots/targetNonCopepod.png) |
+| ![targetCopepod.png](plots/targetCopepod.png)      | ![targetNonCopepod.png](plots/targetNonCopepod.png) |
 
 ### Results
 | SourceDomains        | Baseline           | New dataset           | Conv1 - Finetuning   |
@@ -73,7 +73,7 @@ is a visualization of the V1a and V1b images.
 
 | V1a      | V1b      | SPCInsitu    |
 | :-----: | :-----: | :-----: |
-| ![benchv1a.png](/Users/ktl014/PycharmProjects/mpl/plots/benchv1aVisuals.png)      | ![benchv1b](/Users/ktl014/PycharmProjects/mpl/plots/benchv1bVisuals.png)       | ![insitu.png](/Users/ktl014/PycharmProjects/mpl/plots/spcInsitu.png)    |
+| ![benchv1a.png](plots/benchv1aVisuals.png)      | ![benchv1b](plots/benchv1bVisuals.png)       | ![insitu.png](plots/spcInsitu.png)    |
 
 Dataset Statistics
 * Constrained to 7 specimens, which were randomly sampled for V1a and all specimens for V1b were all utilized.
@@ -87,7 +87,7 @@ Image Preprocessing
 |   | V1a  | V1b  |
 |---|:---:|:---:|
 | Normalized Error Rate  | 26.44%  | 19.10%  |
-| Confusion Matrix  | ![v1aCM.png](/Users/ktl014/PycharmProjects/mpl/plots/allv1c-noise100CM.png) | ![v1bCM](/Users/ktl014/PycharmProjects/mpl/plots/allv1d-noise100CM.png) |
+| Confusion Matrix  | ![v1aCM.png](plots/allv1c-noise100CM.png) | ![v1bCM](plots/allv1d-noise100CM.png) |
 
 Analysis
 * 15% increase in true positive detection for copepods, implying that similar image properties to SPCInsitu does play a role in classification performance
