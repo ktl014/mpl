@@ -106,10 +106,19 @@ For our evaluation, we use a normalized error rate, that averages the true posit
 | SPCInsitu     | 12.311%       | ---           |   ---   |
 | SPCombo       | 13.052%       | 11.325%       | 11.457% |
 
+
+In-depth Analysis of SPCBench and SPCombo Experiments
+
+|   | SPCBench  | SPCombo  |
+|---|:---:|:---:|
+| Confusion Matrix  | ![spcbenchCM.png](plots/spcbenchCM.png) | ![spcomboCM](plots/spcomboCM.png) |
+| Metrics  | ![benchEval.png](plots/spcbenchEval.png)  | ![comboEval.png](plots/spcomboEval.png)  |
+| ROC Curve  | ![benchROC.png](plots/spcbenchROC.png)  | ![comboROC.png](plots/spcomboROC.png)  |
+
 Remarks from Confusion Matrix Analysis
-* (SPCBench) 15% increase for true positive detection, but tradeoff with less precision, implying less confidence with predicting a copepod. 85% of the time, it will correctly classify a copepod.
+* (SPCBench) 15% increase for true positive detection, but tradeoff with less recall, implying less confidence with predicting a copepod. 85% of the time, it predicts a Copepod, it will be correct.
 * (SPCombo) Better with identifying true negatives by 7% and reached same precision as Insitu Model. Overall better model.
-* All models have very similar recall rate of 85%, implying a representation problem within the test set, that is not included in the training set.
+* All models have very similar precision rate of 85%, implying a representation problem within the test set, that is not included in the training set.
 
 ### 2) Optimizing SPCBench images
 
@@ -141,4 +150,5 @@ Analysis
 
 ### Next Steps
 * Fix test set
-* Hard Negative Example Mining: 
+* Use ResNet50 or VGG16 Model for better performance
+* Hard Negative Example Mining: Feeding a 3:1 ratio of Negatives to Positives in the test set
